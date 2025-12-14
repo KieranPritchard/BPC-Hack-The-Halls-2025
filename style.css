@@ -1,0 +1,35 @@
+/* Christmas Background: Deep Red/Green Gradient */
+body {
+    background: linear-gradient(135deg, #004d00 0%, #cc0000 100%); /* Dark Green to Deep Red */
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Arial', sans-serif;
+}
+
+/* UNO Logo with Festive Gold Glow */
+.christmas-logo {
+    text-shadow: 0 0 10px gold, 0 0 20px gold;
+}
+
+/* Floating Snowflakes (replacing the bubbles) */
+.snowflake {
+    position: absolute;
+    color: white; /* Snow white */
+    opacity: 0.8;
+    pointer-events: none;
+    font-size: 20px; /* Base size */
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    0% { transform: translate(0, -50vh) rotate(0deg); opacity: 0.8; } 
+    100% { transform: translate(0, 100vh) rotate(360deg); opacity: 0.1; }
+}
+
+/* Keyframes for the snowflakes to float and fall */
+.snowflake:nth-child(1) { animation-duration: 12s; left: 10%; font-size: 30px; animation-delay: 0s; }
+.snowflake:nth-child(2) { animation-duration: 9s; left: 20%; font-size: 25px; animation-delay: 2s; }
+.snowflake:nth-child(3) { animation-duration: 15s; left: 35%; font-size: 35px; animation-delay: 4s; }
+.snowflake:nth-child(4) { animation-duration: 10s; left: 50%; font-size: 20px; animation-delay: 6s; }
+.snowflake:nth-child(5) { animation-duration: 13s; left: 65%; font-size: 40px; animation-delay: 8s; }
+.snowflake:nth-child(6) { animation-duration: 8s; left: 80%; font-size: 28px; animation-delay: 1s; }

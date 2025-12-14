@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>UNO - Main Menu</title>
+
+  <style>
+    body {
+      background: radial-gradient(circle, #1f1f1f, #0d0d0d);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Floating circles background */
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.25;
+      animation: float 8s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-40px); }
+      100% { transform: translateY(0px); }
+    }
+  </style>
+</head>
+
+<body class="flex items-center justify-center">
+
+  <audio autoplay loop>
+    <source src="./soundtrack/MENUTHEME.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+  <div class="bubble bg-red-600 w-40 h-40 top-10 left-10"></div>
+  <div class="bubble bg-yellow-500 w-24 h-24 top-1/2 left-1/3"></div>
+  <div class="bubble bg-blue-500 w-32 h-32 bottom-20 right-20"></div>
+  <div class="bubble bg-green-500 w-20 h-20 bottom-10 left-1/4"></div>
+
+  <div class="relative z-10 text-center">
+
+    <h1 class="text-6xl font-extrabold text-white drop-shadow-lg mb-10">
+      <span class="text-red-500">U</span>
+      <span class="text-yellow-400">N</span>
+      <span class="text-green-500">O</span>
+    </h1>
+
+    <div class="space-y-4">
+      <a href="game.html"
+        class="block bg-red-600 hover:bg-red-700 px-10 py-4 rounded-lg text-2xl font-bold text-white shadow-xl transition">
+        ▶ Play
+      </a>
+
+      <button onclick="openInstructions()"
+        class="block bg-blue-600 hover:bg-blue-700 px-10 py-4 rounded-lg text-2xl font-bold text-white shadow-xl transition">
+        📘 Instructions
+      </button>
+    </div>
+
+  </div>
+
+  <div id="modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-20">
+    <div class="bg-gray-900 p-8 rounded-xl shadow-xl max-w-lg text-white text-center">
+
+      <h2 class="text-3xl font-bold mb-4">How to Play UNO</h2>
+
+      <p class="text-lg mb-6 text-gray-300">
+        Match cards by <span class="text-yellow-300">color</span> or <span class="text-yellow-300">number</span>.
+        <br><br>
+        Play a card or draw if you can't play.
+        <br><br>
+        First player to play all cards wins!
+      </p>
+
+      <button onclick="closeInstructions()"
+        class="mt-4 bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-bold text-white text-lg">
+        Close
+      </button>
+
+    </div>
+  </div>
+
+  <script>
+    function openInstructions() {
+      document.getElementById("modal").classList.remove("hidden");
+    }
+    function closeInstructions() {
+      document.getElementById("modal").classList.add("hidden");
+    }
+  </script>
+
+</body>
+</html>

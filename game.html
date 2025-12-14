@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNO Game With Images</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .card-img {
+      /* Enforce small, consistent size for all displayed cards */
+      width: 70px;
+      height: 100px;
+      /* Scales the 1024x1524 image down to fit, ensuring it covers the area */
+      object-fit: cover; 
+      border-radius: 8px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.6);
+      transition: transform 0.12s;
+    }
+    .card-img:hover {
+      transform: scale(1.08);
+      cursor: pointer;
+    }
+    body {
+      background: #121212;
+    }
+  </style>
+</head>
+
+<body class="text-white p-6">
+
+  <audio id="wonder-theme" loop src="./soundtrack/wonder.mp3"></audio>
+  <audio id="voyage-theme" loop src="./soundtrack/voyage.mp3"></audio>
+  <audio id="relax-theme" loop src="./soundtrack/relax.mp3"></audio>
+  <audio id="tense-theme" loop src="./soundtrack/tense.mp3"></audio>
+
+  <button id="musicToggleBtn"
+    class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
+    🔇 Music
+  </button>
+  <h1 class="text-center text-4xl font-bold mb-6">UNO Game</h1>
+
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <div class="p-4 bg-gray-800 rounded text-center">
+      <h2 class="text-xl font-semibold">Top Card</h2>
+      <div id="topCard" class="mt-3 flex justify-center"></div>
+    </div>
+
+    <div class="p-4 bg-gray-800 rounded">
+      <h2 class="text-xl font-semibold mb-2">Your Hand</h2>
+      <div id="playerHand" class="flex flex-wrap gap-3"></div>
+      <button id="drawBtn"
+        class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold">
+        Draw Card
+      </button>
+    </div>
+
+    <div class="p-4 bg-gray-800 rounded">
+      <h2 class="text-xl font-semibold mb-2">Computer's Cards</h2>
+      <div id="computerHand" class="flex flex-wrap gap-3"></div>
+    </div>
+
+    <div class="text-center">
+      <a href="index.html" class="text-blue-400 underline text-lg">Return to Menu</a>
+    </div>
+
+    <div id="message" class="text-center text-xl font-bold mt-3"></div>
+
+  </div>
+
+<script>
+/* ------------------------------------
+      UNO GAME LOGIC (WITH IMAGES)
+------------------------------------- */
+
+// Define the core types of cards
+const COLORS = ["red", "green", "blue", "yellow"];
+const NUMBER_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+const ACTION_VALUES = ["+2", "miss"]; 
+
+// --- UPDATED CARD BACK PATH ---
+const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; 
+
+let deck = [];
+let playerHand = [];
+let computerHand = [];
+let topCard = null;
+
+/* -------------------------------------
+  1. Generate Deck using Naming Convention
+------------------------------------- */
+
+function generateDeck() {
+  deck = [];
+  
+  COLORS.forEach(color => {
+    // 1. NUMBER CARDS (0-9)
+    NUMBER_VALUES.forEach(value => {
+      // Filename: red_0.png, blue_7.png, etc.
+      const fileName = `${color}_${value}.png`;
+      const imagePath = `cards/${fileName}`;
+      
+      const card = { color, value: value.toString(), image: imagePath, type: 'number' };
+      
+      // Card '0' appears once
+      deck.push(card); 
+
+      // Cards '1' through '9' appear twice
+      if (value !== 0) {
+        deck.push(card); 
+      }
+    });
+
+    // 2. ACTION CARDS (+2 and miss)
+    ACTION_VALUES.forEach(value => {
+      // Filename: red_+2.png, yellow_miss.png, etc.
+      const fileName = `${color}_${value}.png`;
+      const imagePath = `cards/${fileName}`;
+      
+      // Action cards typically appear twice per color
+      const card = { color, value, image: imagePath, type: 'action' };
+      deck.push(card); 
+      deck.push(card); 
+    });
+  });
+
+  // Calculate total cards generated (92 cards)
+  console.log(`Generated ${deck.length} cards based on standard UNO structure (Numbers, +2, Miss).`);
+  
+  // Shuffle the deck
+  deck = deck.sort(() => Math.random() - 0.5);
+}
+
+/* -------------------------------------
+  2. Image Rendering Function
+------------------------------------- */
+
+function getCardImagePath(card, isFaceUp = true) {
+  if (isFaceUp && card) {
+    return card.image;
+  } else {
+    return CARD_BACK_IMAGE_PATH;
+  }
+}
+
+/* Draw card */
+function drawCard(hand) {
+  if (deck.length === 0) {
+    generateDeck(); 
+  }
+  const drawnCard = deck.pop();
+  if (drawnCard) {
+      hand.push(drawnCard);
+  }
+}
+
+/* -------------------------------------
+  3. Render Function
+------------------------------------- */
+
+function render() {
+  // Top Card
+  const top = document.getElementById("topCard");
+  top.innerHTML = "";
+  if (topCard) {
+    const topImg = document.createElement("img");
+    topImg.src = getCardImagePath(topCard, true); 
+    topImg.className = "card-img";
+    topImg.alt = `Top Card: ${topCard.color} ${topCard.value}`;
+    top.appendChild(topImg);
+  }
+
+
+  // Player Hand
+  const handDiv = document.getElementById("playerHand");
+  handDiv.innerHTML = "";
+  playerHand.forEach((card, index) => {
+    const img = document.createElement("img");
+    img.src = getCardImagePath(card, true); 
+    img.className = "card-img";
+    img.onclick = () => playCard(index);
+    img.alt = `${card.color} ${card.value}`; 
+    handDiv.appendChild(img);
+  });
+
+  // Computer Hand — card backs only
+  const compDiv = document.getElementById("computerHand");
+  compDiv.innerHTML = "";
+  computerHand.forEach((card) => {
+    const img = document.createElement("img");
+    img.src = getCardImagePath(card, false); 
+    img.className = "card-img";
+    img.alt = "Card Back";
+    compDiv.appendChild(img);
+  });
+
+  checkWinner();
+}
+
+/* Check if card playable */
+function canPlay(card) {
+  return card.color === topCard.color || card.value === topCard.value;
+}
+
+/* Player plays card */
+function playCard(index) {
+  const card = playerHand[index];
+
+  if (!canPlay(card)) {
+    setMessage("❌ You can't play that card!");
+    return;
+  }
+  
+  topCard = card;
+  playerHand.splice(index, 1);
+  
+  setMessage("You played a card. Computer's turn...");
+  render();
+
+  setTimeout(computerTurn, 900);
+}
+
+/* Player draws */
+document.getElementById("drawBtn").onclick = () => {
+  drawCard(playerHand);
+  setMessage("You drew a card. Computer's turn...");
+  render();
+  setTimeout(computerTurn, 900);
+};
+
+/* Computer turn logic */
+function computerTurn() {
+  let playable = computerHand.find(c => canPlay(c));
+
+  if (playable) {
+    topCard = playable;
+    const playedIndex = computerHand.findIndex(c => c.image === playable.image);
+    computerHand.splice(playedIndex, 1);
+    setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
+    
+  } else {
+    drawCard(computerHand);
+    setMessage("🤖 Computer drew a card");
+  }
+
+  render();
+}
+
+/* Winner check */
+function checkWinner() {
+  if (playerHand.length === 0) {
+    setMessage("🎉 You win!");
+    disableGame();
+  }
+  if (computerHand.length === 0) {
+    setMessage("💀 Computer wins!");
+    disableGame();
+  }
+}
+
+/* Disable inputs */
+function disableGame() {
+  document.getElementById("drawBtn").disabled = true;
+  document.getElementById("playerHand").innerHTML = ""; 
+}
+
+/* Message helper */
+function setMessage(msg) {
+  document.getElementById("message").innerText = msg;
+}
+
+/* ------------------------------------
+      🎶 MUSIC MANAGER LOGIC 🎶
+------------------------------------- */
+
+const themes = ["wonder", "voyage", "relax", "tense"];
+let currentThemeIndex = -1;
+let currentAudio = null;
+let isMusicEnabled = false; 
+const TOGGLE_BUTTON = document.getElementById('musicToggleBtn');
+let rotationIntervalId = null; // To hold the interval timer
+
+const MusicManager = {
+    // 1. Plays the next theme in the sequence
+    playNextTheme() {
+        if (!isMusicEnabled) return; 
+
+        // Stop the current track
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0; // Reset to start
+        }
+
+        // Cycle to the next theme
+        currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+        const nextThemeId = themes[currentThemeIndex] + "-theme";
+        
+        currentAudio = document.getElementById(nextThemeId);
+        
+        // Start playing the new track
+        if (currentAudio) {
+            currentAudio.volume = 0.5; // Set a reasonable volume
+            // .play() must be in a Promise chain to handle browser policies
+            currentAudio.play().catch(error => console.error("Music playback failed:", error));
+            
+            console.log(`Now Playing: ${themes[currentThemeIndex]}`);
+        }
+    },
+
+    // 2. Starts the automatic theme rotation
+    startRotation() {
+        // Clear any existing interval before starting a new one
+        if (rotationIntervalId) {
+            clearInterval(rotationIntervalId);
+        }
+        
+        // Start the first theme immediately
+        this.playNextTheme();
+        
+        // Then, set an interval to switch themes every 60 seconds (60000ms)
+        rotationIntervalId = setInterval(() => this.playNextTheme(), 60000); 
+    },
+    
+    // 3. Stops the rotation
+    stopRotation() {
+        if (rotationIntervalId) {
+            clearInterval(rotationIntervalId);
+            rotationIntervalId = null;
+        }
+    },
+
+    // 4. Toggles the entire system on/off
+    toggleMusic() {
+        isMusicEnabled = !isMusicEnabled;
+        
+        if (isMusicEnabled) {
+            TOGGLE_BUTTON.innerText = "🔊 Music";
+            this.startRotation();
+        } else {
+            TOGGLE_BUTTON.innerText = "🔇 Music";
+            this.stopRotation();
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
+        }
+    }
+};
+
+// Add event listener to the button outside of the MusicManager object
+TOGGLE_BUTTON.addEventListener('click', () => {
+    MusicManager.toggleMusic();
+});
+
+
+/* -------------------------------------
+  START GAME FUNCTION
+------------------------------------- */
+
+function startGame() {
+  generateDeck();
+  playerHand = [];
+  computerHand = [];
+
+  for (let i = 0; i < 5; i++) {
+    drawCard(playerHand);
+    drawCard(computerHand);
+  }
+
+  topCard = deck.pop();
+  render();
+  
+  // NOTE: Music will only start when the user clicks the Mute/Play button.
+}
+
+startGame();
+</script>
+
+</body>
+</html>

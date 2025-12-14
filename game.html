@@ -41,6 +41,7 @@
 
   <audio id="win-sound" src="./SFX/VICTORY.mp3"></audio>
   <audio id="lose-sound" src="./SFX/LOST.mp3"></audio>
+  <audio id="start-sound" src="./SFX/CHALLENGE.mp3"></audio>
 
   <button id="musicToggleBtn"
     class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
@@ -96,7 +97,6 @@ let computerHand = [];
 let topCard = null;
 
 // --- STATE VARIABLES ---
-// NOTE: These flags ONLY determine if the *next* player suffers the penalty.
 let plusTwoActive = false; 
 let skipActive = false; 
 let gameOver = false; 
@@ -216,7 +216,7 @@ function canPlay(card) {
 }
 
 /* -------------------------------------
-  4. Action Card Logic Helpers (FIXED)
+  4. Action Card Logic Helpers
 ------------------------------------- */
 
 function applyPlusTwoEffect(targetHand, targetName) {
@@ -292,7 +292,7 @@ function playCard(index) {
   setTimeout(computerTurn, 900);
 }
 
-/* Player draws (FIXED simplified logic) */
+/* Player draws */
 document.getElementById("drawBtn").onclick = () => {
   if (gameOver) return;
 
@@ -308,14 +308,12 @@ document.getElementById("drawBtn").onclick = () => {
     setMessage("You drew a card. Computer's turn...");
   }
   
-  // No need to set skipActive = false here, as drawing a card passes the turn naturally.
-
   render();
   // Pass the turn to the computer after the draw/penalty
   setTimeout(computerTurn, 900);
 };
 
-/* Computer turn logic (FIXED) */
+/* Computer turn logic */
 function computerTurn() {
     if (gameOver) return;
 
@@ -350,13 +348,13 @@ function computerTurn() {
             setTimeout(() => {
                 applyPlusTwoEffect(playerHand, "You");
             }, 500);
-            return; // Exit, as applyPlusTwoEffect handles the next computerTurn call if player skips
+            return; 
         } else if (playable.value === "miss") {
              skipActive = true; 
              setTimeout(() => {
                  applySkipEffect("You");
              }, 500);
-             return; // Exit, as applySkipEffect handles the next computerTurn call if player skips
+             return; 
         }
         
     } else {
@@ -372,7 +370,7 @@ function computerTurn() {
     }, 500);
 }
 
-/* *** Sound Effect Helpers (Unchanged) *** */
+/* *** Sound Effect Helpers (MODIFIED) *** */
 
 function playWinSound() {
     MusicManager.stopMusic(); 
@@ -394,7 +392,19 @@ function playLoseSound() {
     }
 }
 
-/* Winner check (Unchanged) */
+// NEW: Function to play the start sound
+function playStartSound() {
+    const startAudio = document.getElementById('start-sound');
+    if (startAudio) {
+        startAudio.currentTime = 0;
+        startAudio.volume = 0.6;
+        // Attempt to play immediately, though browsers may block this unless triggered by user input
+        startAudio.play().catch(error => console.warn("Start sound blocked. Needs user interaction."));
+    }
+}
+
+
+/* Winner check */
 function checkWinner() {
   if (playerHand.length === 0) {
     setMessage("🎉 You win! Play again?");
@@ -411,7 +421,7 @@ function checkWinner() {
   return false;
 }
 
-/* Disable inputs (Unchanged) */
+/* Disable inputs (MODIFIED to play start sound on reload trigger) */
 function disableGame() {
   gameOver = true;
   
@@ -426,19 +436,22 @@ function disableGame() {
   button.innerText = "▶️ Start New Game";
   
   button.onclick = () => {
-      window.location.reload();
+      // Play sound before reloading
+      playStartSound(); 
+      // Reload the page to restart the game
+      setTimeout(() => window.location.reload(), 100); 
   };
   
   handDiv.appendChild(button);
 }
 
-/* Message helper (Unchanged) */
+/* Message helper */
 function setMessage(msg) {
   document.getElementById("message").innerText = msg;
 }
 
 /* ------------------------------------
-      🎶 MUSIC MANAGER LOGIC 🎶 (Unchanged)
+      🎶 MUSIC MANAGER LOGIC 🎶
 ------------------------------------- */
 
 const themes = ["wonder", "voyage", "relax", "tense"];
@@ -504,7 +517,7 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 
 
 /* -------------------------------------
-  START GAME FUNCTION (Unchanged)
+  START GAME FUNCTION
 ------------------------------------- */
 
 function startGame() {
@@ -513,7 +526,7 @@ function startGame() {
   computerHand = [];
   gameOver = false; 
   plusTwoActive = false;
-  skipActive = false; // Reset action flags
+  skipActive = false; 
 
   for (let i = 0; i < 5; i++) {
     drawCard(playerHand);
@@ -526,6 +539,9 @@ function startGame() {
 }
 
 startGame();
+
+// NEW: Play start sound immediately on page load
+playStartSound();
 </script>
 
 </body>

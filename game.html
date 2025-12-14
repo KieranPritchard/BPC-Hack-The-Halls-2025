@@ -42,6 +42,9 @@
   <audio id="win-sound" src="./SFX/VICTORY.mp3"></audio>
   <audio id="lose-sound" src="./SFX/LOST.mp3"></audio>
   <audio id="start-sound" src="./SFX/CHALLENGE.mp3"></audio>
+  
+  <audio id="play-card-sound" src="./SFX/PLACECARD.mp3"></audio>
+  <audio id="draw-card-sound" src="./SFX/CARDSWOOSH.mp3"></audio>
 
   <button id="musicToggleBtn"
     class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
@@ -260,7 +263,7 @@ function applySkipEffect(targetName) {
     }
 }
 
-/* Player plays card */
+/* Player plays card (MODIFIED) */
 function playCard(index) {
   if (gameOver) return;
 
@@ -273,6 +276,8 @@ function playCard(index) {
   
   topCard = card;
   playerHand.splice(index, 1);
+  
+  playCardSound(); // <--- NEW: Play sound when card is successfully played
   
   setMessage("You played a card. Computer's turn...");
   render();
@@ -292,7 +297,7 @@ function playCard(index) {
   setTimeout(computerTurn, 900);
 }
 
-/* Player draws */
+/* Player draws (MODIFIED) */
 document.getElementById("drawBtn").onclick = () => {
   if (gameOver) return;
 
@@ -300,11 +305,13 @@ document.getElementById("drawBtn").onclick = () => {
   if (plusTwoActive) {
     drawCard(playerHand);
     drawCard(playerHand);
+    playDrawSound(); // <--- NEW: Play sound for drawing 2
     setMessage("You drew 2 cards due to the +2 penalty. Computer's turn...");
     plusTwoActive = false; 
   } else {
     // Normal draw logic
     drawCard(playerHand);
+    playDrawSound(); // <--- NEW: Play sound for drawing 1
     setMessage("You drew a card. Computer's turn...");
   }
   
@@ -313,7 +320,7 @@ document.getElementById("drawBtn").onclick = () => {
   setTimeout(computerTurn, 900);
 };
 
-/* Computer turn logic */
+/* Computer turn logic (MODIFIED) */
 function computerTurn() {
     if (gameOver) return;
 
@@ -336,6 +343,9 @@ function computerTurn() {
         topCard = playable;
         const playedIndex = computerHand.findIndex(c => c.image === playable.image);
         computerHand.splice(playedIndex, 1);
+        
+        playCardSound(); // <--- NEW: Play sound when computer plays card
+
         setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
         
         render();
@@ -359,6 +369,7 @@ function computerTurn() {
         
     } else {
         drawCard(computerHand);
+        playDrawSound(); // <--- NEW: Play sound when computer draws card
         setMessage("🤖 Computer drew a card");
         render();
     }
@@ -370,7 +381,7 @@ function computerTurn() {
     }, 500);
 }
 
-/* *** Sound Effect Helpers (MODIFIED) *** */
+/* *** Sound Effect Helpers (ADDED Card and Draw Sounds) *** */
 
 function playWinSound() {
     MusicManager.stopMusic(); 
@@ -392,14 +403,32 @@ function playLoseSound() {
     }
 }
 
-// NEW: Function to play the start sound
 function playStartSound() {
     const startAudio = document.getElementById('start-sound');
     if (startAudio) {
         startAudio.currentTime = 0;
         startAudio.volume = 0.6;
-        // Attempt to play immediately, though browsers may block this unless triggered by user input
         startAudio.play().catch(error => console.warn("Start sound blocked. Needs user interaction."));
+    }
+}
+
+// NEW: Function to play card placement sound
+function playCardSound() {
+    const cardAudio = document.getElementById('play-card-sound');
+    if (cardAudio) {
+        cardAudio.currentTime = 0;
+        cardAudio.volume = 0.4; // Slightly lower volume for effect
+        cardAudio.play().catch(error => console.error("Card play sound failed:", error));
+    }
+}
+
+// NEW: Function to play card draw sound
+function playDrawSound() {
+    const drawAudio = document.getElementById('draw-card-sound');
+    if (drawAudio) {
+        drawAudio.currentTime = 0;
+        drawAudio.volume = 0.4; // Slightly lower volume for effect
+        drawAudio.play().catch(error => console.error("Card draw sound failed:", error));
     }
 }
 
@@ -421,7 +450,7 @@ function checkWinner() {
   return false;
 }
 
-/* Disable inputs (MODIFIED to play start sound on reload trigger) */
+/* Disable inputs */
 function disableGame() {
   gameOver = true;
   
@@ -540,7 +569,6 @@ function startGame() {
 
 startGame();
 
-// NEW: Play start sound immediately on page load
 playStartSound();
 </script>
 

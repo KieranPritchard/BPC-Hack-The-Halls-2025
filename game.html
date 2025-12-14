@@ -45,6 +45,7 @@
   
   <audio id="play-card-sound" src="./SFX/PLACECARD.mp3"></audio>
   <audio id="draw-card-sound" src="./SFX/CARDSWOOSH.mp3"></audio>
+  <audio id="plus-two-sound" src="./SFX/PLUS2.mp3"></audio> 
 
   <button id="musicToggleBtn"
     class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
@@ -277,16 +278,17 @@ function playCard(index) {
   topCard = card;
   playerHand.splice(index, 1);
   
-  playCardSound(); // <--- NEW: Play sound when card is successfully played
+  playCardSound();
   
   setMessage("You played a card. Computer's turn...");
   render();
 
   if (checkWinner()) return;
 
-  // APPLY ACTION EFFECT
+  // APPLY ACTION EFFECT (MODIFIED to include sound)
   if (card.value === "+2") {
     plusTwoActive = true; 
+    playPlusTwoSound(); // <--- NEW: Play +2 sound
     setMessage(`You played a +2. Computer must draw 2!`);
     
   } else if (card.value === "miss") {
@@ -305,13 +307,13 @@ document.getElementById("drawBtn").onclick = () => {
   if (plusTwoActive) {
     drawCard(playerHand);
     drawCard(playerHand);
-    playDrawSound(); // <--- NEW: Play sound for drawing 2
+    playDrawSound(); 
     setMessage("You drew 2 cards due to the +2 penalty. Computer's turn...");
     plusTwoActive = false; 
   } else {
     // Normal draw logic
     drawCard(playerHand);
-    playDrawSound(); // <--- NEW: Play sound for drawing 1
+    playDrawSound(); 
     setMessage("You drew a card. Computer's turn...");
   }
   
@@ -344,7 +346,7 @@ function computerTurn() {
         const playedIndex = computerHand.findIndex(c => c.image === playable.image);
         computerHand.splice(playedIndex, 1);
         
-        playCardSound(); // <--- NEW: Play sound when computer plays card
+        playCardSound(); 
 
         setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
         
@@ -352,9 +354,10 @@ function computerTurn() {
 
         if (checkWinner()) return;
 
-        // Apply action card effects for the player
+        // Apply action card effects for the player (MODIFIED to include sound)
         if (playable.value === "+2") {
             plusTwoActive = true; 
+            playPlusTwoSound(); // <--- NEW: Play +2 sound
             setTimeout(() => {
                 applyPlusTwoEffect(playerHand, "You");
             }, 500);
@@ -369,7 +372,7 @@ function computerTurn() {
         
     } else {
         drawCard(computerHand);
-        playDrawSound(); // <--- NEW: Play sound when computer draws card
+        playDrawSound(); 
         setMessage("🤖 Computer drew a card");
         render();
     }
@@ -381,7 +384,7 @@ function computerTurn() {
     }, 500);
 }
 
-/* *** Sound Effect Helpers (ADDED Card and Draw Sounds) *** */
+/* *** Sound Effect Helpers (ADDED Plus Two Sound) *** */
 
 function playWinSound() {
     MusicManager.stopMusic(); 
@@ -412,23 +415,31 @@ function playStartSound() {
     }
 }
 
-// NEW: Function to play card placement sound
 function playCardSound() {
     const cardAudio = document.getElementById('play-card-sound');
     if (cardAudio) {
         cardAudio.currentTime = 0;
-        cardAudio.volume = 0.4; // Slightly lower volume for effect
+        cardAudio.volume = 0.4; 
         cardAudio.play().catch(error => console.error("Card play sound failed:", error));
     }
 }
 
-// NEW: Function to play card draw sound
 function playDrawSound() {
     const drawAudio = document.getElementById('draw-card-sound');
     if (drawAudio) {
         drawAudio.currentTime = 0;
-        drawAudio.volume = 0.4; // Slightly lower volume for effect
+        drawAudio.volume = 0.4; 
         drawAudio.play().catch(error => console.error("Card draw sound failed:", error));
+    }
+}
+
+// NEW: Function to play the +2 sound
+function playPlusTwoSound() {
+    const plusTwoAudio = document.getElementById('plus-two-sound');
+    if (plusTwoAudio) {
+        plusTwoAudio.currentTime = 0;
+        plusTwoAudio.volume = 0.7; // Higher volume for impact
+        plusTwoAudio.play().catch(error => console.error("+2 sound failed:", error));
     }
 }
 

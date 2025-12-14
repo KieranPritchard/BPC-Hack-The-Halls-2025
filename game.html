@@ -29,6 +29,31 @@
     #playAgainBtn:hover {
         transform: scale(1.05);
     }
+    /* Style for the color selection popup */
+    #colorSelector {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #333;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        z-index: 1000;
+        text-align: center;
+    }
+    .color-option {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin: 5px;
+        cursor: pointer;
+        border: 4px solid transparent;
+        transition: border-color 0.1s;
+    }
+    .color-option:hover {
+        border-color: white;
+    }
   </style>
 </head>
 
@@ -46,6 +71,7 @@
   <audio id="play-card-sound" src="./SFX/PLACECARD.mp3"></audio>
   <audio id="draw-card-sound" src="./SFX/CARDSWOOSH.mp3"></audio>
   <audio id="plus-two-sound" src="./SFX/PLUS2.mp3"></audio> 
+  <audio id="wild-sound" src="./SFX/CARDSWOOSH.mp3"></audio> 
 
   <button id="musicToggleBtn"
     class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
@@ -82,6 +108,15 @@
 
   </div>
 
+<div id="colorSelector" class="hidden">
+    <h3 class="text-xl font-bold mb-4">Choose a New Color</h3>
+    <div id="colorOptions" class="flex justify-center space-x-2">
+        <div class="color-option bg-red-600" onclick="handleColorSelect('red')"></div>
+        <div class="color-option bg-green-600" onclick="handleColorSelect('green')"></div>
+        <div class="color-option bg-blue-600" onclick="handleColorSelect('blue')"></div>
+        <div class="color-option bg-yellow-400" onclick="handleColorSelect('yellow')"></div>
+    </div>
+</div>
 <script>
 /* ------------------------------------
       UNO GAME LOGIC (WITH IMAGES)
@@ -90,7 +125,10 @@
 // Define the core types of cards
 const COLORS = ["red", "green", "blue", "yellow"];
 const NUMBER_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const ACTION_VALUES = ["+2", "miss"]; 
+// --- MODIFIED ACTION VALUES TO INCLUDE WILDS ---
+const ACTION_VALUES = ["+2", "miss", "wild", "+4"]; 
+// --- NEW CONSTANT FOR WILDS ---
+const WILD_VALUES = ["wild", "+4"];
 
 // --- UPDATED CARD BACK PATH ---
 const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; 
@@ -104,9 +142,13 @@ let topCard = null;
 let plusTwoActive = false; 
 let skipActive = false; 
 let gameOver = false; 
+// --- NEW: Stores the index of the card waiting for color selection ---
+let pendingPlayIndex = -1; 
+// --- NEW: Tracks the current color (only relevant for Wild/Wild+4) ---
+let currentColor = null;
 
 /* -------------------------------------
-  1. Generate Deck using Naming Convention
+  1. Generate Deck using Naming Convention (MODIFIED)
 ------------------------------------- */
 
 function generateDeck() {
@@ -128,7 +170,8 @@ function generateDeck() {
     });
 
     // 2. ACTION CARDS (+2 and miss)
-    ACTION_VALUES.forEach(value => {
+    // Filter out wild cards since they are not color-specific initially
+    ACTION_VALUES.filter(v => !WILD_VALUES.includes(v)).forEach(value => {
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
       
@@ -136,6 +179,21 @@ function generateDeck() {
       deck.push(card); 
       deck.push(card); 
     });
+  });
+
+  // 3. WILD CARDS (4 of each) --- ADDED FOR WILDS ---
+  WILD_VALUES.forEach(value => {
+      const fileName = value === "wild" ? "wildcard_1.png" : "card_+4_1.png";
+      const imagePath = `cards/${fileName}`;
+
+      // Wild cards are generated without a color. The color property will be set
+      // dynamically when played. We use a placeholder 'black' color.
+      const card = { color: 'black', value, image: imagePath, type: 'wild' }; 
+      
+      // Add 4 of each Wild card type
+      for(let i = 0; i < 4; i++) {
+          deck.push({...card, isWild: true}); // Add a helper property
+      }
   });
 
   console.log(`Generated ${deck.length} cards...`);
@@ -168,7 +226,7 @@ function drawCard(hand) {
 }
 
 /* -------------------------------------
-  3. Render Function
+  3. Render Function (MODIFIED)
 ------------------------------------- */
 
 function render() {
@@ -179,7 +237,19 @@ function render() {
     const topImg = document.createElement("img");
     topImg.src = getCardImagePath(topCard, true); 
     topImg.className = "card-img";
-    topImg.alt = `Top Card: ${topCard.color} ${topCard.value}`;
+    
+    // --- MODIFIED: Show the actual current color on the UI ---
+    const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+    topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
+
+    // Add a color border to signify the current color after a Wild card play
+    if (topCard.isWild && currentColor) {
+        topImg.style.border = `4px solid ${currentColor === 'yellow' ? 'gold' : currentColor}`;
+    } else {
+        topImg.style.border = 'none';
+    }
+    // --------------------------------------------------------
+
     top.appendChild(topImg);
   }
 
@@ -192,8 +262,8 @@ function render() {
     img.src = getCardImagePath(card, true); 
     img.className = "card-img";
     
-    // Only allow clicking if the game is not over
-    if (!gameOver) {
+    // Only allow clicking if the game is not over AND color selector is not visible
+    if (!gameOver && pendingPlayIndex === -1) {
         img.onclick = () => playCard(index);
     }
     
@@ -213,14 +283,22 @@ function render() {
   });
 }
 
-/* Check if card playable */
+/* Check if card playable (MODIFIED) */
 function canPlay(card) {
-  // Can play if color OR value match
-  return card.color === topCard.color || card.value === topCard.value;
+    // --- ADDED/MODIFIED FOR WILD CARDS ---
+    if (card.isWild) {
+        return true; // Wild cards can be played anytime
+    }
+    // Get the effective color for the top card (the color set by a previous wild)
+    const effectiveTopColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+
+    // Can play if color OR value match
+    return card.color === effectiveTopColor || card.value === topCard.value;
+    // ------------------------------------
 }
 
 /* -------------------------------------
-  4. Action Card Logic Helpers
+  4. Action Card Logic Helpers (MODIFIED)
 ------------------------------------- */
 
 function applyPlusTwoEffect(targetHand, targetName) {
@@ -235,15 +313,36 @@ function applyPlusTwoEffect(targetHand, targetName) {
     render();
     
     if (targetName === "You") {
-        // Player skipped, computer goes again
         setTimeout(computerTurn, 1000); 
     } else {
-        // Computer skipped, player's turn starts again
         setTimeout(() => {
             setMessage("Your turn now!");
         }, 1000); 
     }
 }
+
+// --- NEW FUNCTION FOR +4 EFFECT ---
+function applyPlusFourEffect(targetHand, targetName) {
+    if (gameOver) return;
+
+    for (let i = 0; i < 4; i++) {
+        drawCard(targetHand);
+    }
+    
+    plusTwoActive = false; // Using the same flag for turn skip for simplicity
+    
+    setMessage(`💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
+    render();
+    
+    if (targetName === "You") {
+        setTimeout(computerTurn, 1000); 
+    } else {
+        setTimeout(() => {
+            setMessage("Your turn now!");
+        }, 1000); 
+    }
+}
+// -----------------------------------
 
 function applySkipEffect(targetName) {
     if (gameOver) return;
@@ -254,10 +353,8 @@ function applySkipEffect(targetName) {
     render();
     
     if (targetName === "You") {
-        // Player skipped, computer goes again
         setTimeout(computerTurn, 1000); 
     } else {
-        // Computer skipped, player's turn starts again
         setTimeout(() => {
             setMessage("Your turn now!");
         }, 1000); 
@@ -266,7 +363,7 @@ function applySkipEffect(targetName) {
 
 /* Player plays card (MODIFIED) */
 function playCard(index) {
-  if (gameOver) return;
+  if (gameOver || pendingPlayIndex !== -1) return;
 
   const card = playerHand[index];
 
@@ -275,7 +372,18 @@ function playCard(index) {
     return;
   }
   
+  // --- ADDED/MODIFIED FOR WILD CARDS ---
+  if (card.isWild) {
+      pendingPlayIndex = index; // Store the card's index
+      showColorSelector(); 
+      playCardSound(); // Play sound immediately for feedback
+      return; // Wait for color selection
+  }
+  // ------------------------------------
+  
+  // Normal card play logic
   topCard = card;
+  currentColor = card.color; // Set/Reset the current color
   playerHand.splice(index, 1);
   
   playCardSound();
@@ -285,12 +393,11 @@ function playCard(index) {
 
   if (checkWinner()) return;
 
-  // APPLY ACTION EFFECT (MODIFIED to include sound)
+  // APPLY ACTION EFFECT 
   if (card.value === "+2") {
     plusTwoActive = true; 
-    playPlusTwoSound(); // <--- NEW: Play +2 sound
+    playPlusTwoSound(); 
     setMessage(`You played a +2. Computer must draw 2!`);
-    
   } else if (card.value === "miss") {
     skipActive = true;
     setMessage(`You played a Skip. Computer's turn is skipped!`);
@@ -299,16 +406,71 @@ function playCard(index) {
   setTimeout(computerTurn, 900);
 }
 
+// --- NEW: Color Selection Logic for Wild Cards ---
+function showColorSelector() {
+    document.getElementById("colorSelector").classList.remove('hidden');
+    // Disable main draw button while color selector is active
+    document.getElementById("drawBtn").disabled = true;
+}
+
+function hideColorSelector() {
+    document.getElementById("colorSelector").classList.add('hidden');
+    document.getElementById("drawBtn").disabled = false;
+    pendingPlayIndex = -1;
+}
+
+window.handleColorSelect = function(selectedColor) {
+    if (pendingPlayIndex === -1) return;
+    
+    const card = playerHand[pendingPlayIndex];
+    
+    // 1. Set the top card and current color
+    topCard = card;
+    currentColor = selectedColor; // This is the crucial step
+    
+    // 2. Remove the card from the player's hand
+    playerHand.splice(pendingPlayIndex, 1);
+    
+    // 3. Hide the selector and reset the state
+    hideColorSelector();
+
+    setMessage(`You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`);
+    render();
+
+    if (checkWinner()) return;
+
+    // 4. Apply Wild Card effect
+    if (card.value === "+4") {
+        playPlusTwoSound(); // Use the +2 sound for the +4 effect
+        setMessage(`You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`);
+        setTimeout(() => {
+            applyPlusFourEffect(computerHand, "Computer");
+        }, 500);
+        return;
+    }
+    
+    // 5. Pass turn to computer for a plain 'wild' card
+    setTimeout(computerTurn, 900);
+}
+// ----------------------------------------------------
+
+
 /* Player draws (MODIFIED) */
 document.getElementById("drawBtn").onclick = () => {
   if (gameOver) return;
 
-  // 1. Check for active +2 penalty first
+  // 1. Check for active +2 or +4 penalty first (+4 uses plusTwoActive flag for simplicity)
   if (plusTwoActive) {
-    drawCard(playerHand);
-    drawCard(playerHand);
+    // Check if the penalty is from a +2 or a +4, though they draw different amounts
+    const isPlusFour = topCard && topCard.value === "+4";
+    const drawAmount = isPlusFour ? 4 : 2;
+
+    for (let i = 0; i < drawAmount; i++) {
+        drawCard(playerHand);
+    }
+    
     playDrawSound(); 
-    setMessage("You drew 2 cards due to the +2 penalty. Computer's turn...");
+    setMessage(`You drew ${drawAmount} cards due to the +${drawAmount} penalty. Computer's turn...`);
     plusTwoActive = false; 
   } else {
     // Normal draw logic
@@ -332,9 +494,14 @@ function computerTurn() {
         return; 
     }
     
-    // 2. Check for active +2 penalty
+    // 2. Check for active +2 or +4 penalty
     if (plusTwoActive) {
-        applyPlusTwoEffect(computerHand, "Computer");
+        const isPlusFour = topCard && topCard.value === "+4";
+        if (isPlusFour) {
+            applyPlusFourEffect(computerHand, "Computer");
+        } else {
+            applyPlusTwoEffect(computerHand, "Computer");
+        }
         return; 
     }
     
@@ -342,7 +509,61 @@ function computerTurn() {
     let playable = computerHand.find(c => canPlay(c));
 
     if (playable) {
+        
+        // --- ADDED/MODIFIED FOR WILD CARDS ---
+        if (playable.isWild) {
+            playWildSound(); // Play Wild sound for computer
+            
+            // Computer logic to choose the best color:
+            // 1. Pick a color it has the most of.
+            // 2. Default to the current color if it has none.
+            const colorCounts = {};
+            COLORS.forEach(c => colorCounts[c] = computerHand.filter(card => card.color === c && !card.isWild).length);
+            
+            let bestColor = 'red'; // Default just in case
+            let maxCount = -1;
+            
+            COLORS.forEach(c => {
+                if (colorCounts[c] > maxCount) {
+                    maxCount = colorCounts[c];
+                    bestColor = c;
+                }
+            });
+
+            // Set the top card and the new current color
+            topCard = playable;
+            currentColor = bestColor; 
+
+            // Remove the card
+            const playedIndex = computerHand.findIndex(c => c.image === playable.image);
+            computerHand.splice(playedIndex, 1);
+            
+            setMessage(`🤖 Computer played a Wild Card and chose ${bestColor.toUpperCase()}`);
+            
+            render();
+
+            if (checkWinner()) return;
+
+            // Apply Wild +4 effect
+            if (playable.value === "+4") {
+                playPlusTwoSound(); 
+                setTimeout(() => {
+                    applyPlusFourEffect(playerHand, "You");
+                }, 500);
+                return; 
+            }
+            
+            // Plain Wild card: pass turn to player
+            setTimeout(() => {
+                setMessage("Your turn now!");
+            }, 500);
+            return; // Skip the rest of the turn logic
+        }
+        // ------------------------------------
+        
+        // Non-Wild card play
         topCard = playable;
+        currentColor = playable.color; // Reset current color
         const playedIndex = computerHand.findIndex(c => c.image === playable.image);
         computerHand.splice(playedIndex, 1);
         
@@ -354,10 +575,10 @@ function computerTurn() {
 
         if (checkWinner()) return;
 
-        // Apply action card effects for the player (MODIFIED to include sound)
+        // Apply action card effects for the player
         if (playable.value === "+2") {
             plusTwoActive = true; 
-            playPlusTwoSound(); // <--- NEW: Play +2 sound
+            playPlusTwoSound(); 
             setTimeout(() => {
                 applyPlusTwoEffect(playerHand, "You");
             }, 500);
@@ -371,20 +592,20 @@ function computerTurn() {
         }
         
     } else {
+        // Computer draws
         drawCard(computerHand);
         playDrawSound(); 
         setMessage("🤖 Computer drew a card");
         render();
     }
 
-    // Since no action card was played OR an action was played but the turn wasn't skipped, 
-    // it's the player's turn now.
+    // Player's turn now.
     setTimeout(() => {
         setMessage("Your turn now!");
     }, 500);
 }
 
-/* *** Sound Effect Helpers (ADDED Plus Two Sound) *** */
+/* *** Sound Effect Helpers (ADDED Wild Sound) *** */
 
 function playWinSound() {
     MusicManager.stopMusic(); 
@@ -433,13 +654,22 @@ function playDrawSound() {
     }
 }
 
-// NEW: Function to play the +2 sound
 function playPlusTwoSound() {
     const plusTwoAudio = document.getElementById('plus-two-sound');
     if (plusTwoAudio) {
         plusTwoAudio.currentTime = 0;
         plusTwoAudio.volume = 0.7; // Higher volume for impact
         plusTwoAudio.play().catch(error => console.error("+2 sound failed:", error));
+    }
+}
+
+// NEW: Function to play the Wild card sound
+function playWildSound() {
+    const wildAudio = document.getElementById('wild-sound');
+    if (wildAudio) {
+        wildAudio.currentTime = 0;
+        wildAudio.volume = 0.7; // Higher volume for impact
+        wildAudio.play().catch(error => console.error("Wild sound failed:", error));
     }
 }
 
@@ -557,7 +787,7 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 
 
 /* -------------------------------------
-  START GAME FUNCTION
+  START GAME FUNCTION (MODIFIED)
 ------------------------------------- */
 
 function startGame() {
@@ -567,13 +797,24 @@ function startGame() {
   gameOver = false; 
   plusTwoActive = false;
   skipActive = false; 
+  pendingPlayIndex = -1; // Reset new state variable
 
   for (let i = 0; i < 5; i++) {
     drawCard(playerHand);
     drawCard(computerHand);
   }
 
+  // Ensure the starting card is not a Wild Card. If it is, draw until it's not.
   topCard = deck.pop();
+  while (topCard && topCard.isWild) {
+      // Put the wild card back (or discard it for simplicity) and draw a new one
+      topCard = deck.pop();
+  }
+  
+  if (topCard) {
+      currentColor = topCard.color; // Initialize the current color
+  }
+
   render();
   setMessage("Game started! Your turn.");
 }

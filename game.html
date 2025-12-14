@@ -22,6 +22,13 @@
     body {
       background: #121212;
     }
+    /* New style for the game-over overlay button */
+    #playAgainBtn {
+        transition: transform 0.2s;
+    }
+    #playAgainBtn:hover {
+        transform: scale(1.05);
+    }
   </style>
 </head>
 
@@ -88,6 +95,12 @@ let playerHand = [];
 let computerHand = [];
 let topCard = null;
 
+// --- STATE VARIABLES ---
+// NOTE: These flags ONLY determine if the *next* player suffers the penalty.
+let plusTwoActive = false; 
+let skipActive = false; 
+let gameOver = false; 
+
 /* -------------------------------------
   1. Generate Deck using Naming Convention
 ------------------------------------- */
@@ -98,16 +111,13 @@ function generateDeck() {
   COLORS.forEach(color => {
     // 1. NUMBER CARDS (0-9)
     NUMBER_VALUES.forEach(value => {
-      // Filename: red_0.png, blue_7.png, etc.
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
       
       const card = { color, value: value.toString(), image: imagePath, type: 'number' };
       
-      // Card '0' appears once
       deck.push(card); 
 
-      // Cards '1' through '9' appear twice
       if (value !== 0) {
         deck.push(card); 
       }
@@ -115,21 +125,17 @@ function generateDeck() {
 
     // 2. ACTION CARDS (+2 and miss)
     ACTION_VALUES.forEach(value => {
-      // Filename: red_+2.png, yellow_miss.png, etc.
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
       
-      // Action cards typically appear twice per color
       const card = { color, value, image: imagePath, type: 'action' };
       deck.push(card); 
       deck.push(card); 
     });
   });
 
-  // Calculate total cards generated (92 cards)
-  console.log(`Generated ${deck.length} cards based on standard UNO structure (Numbers, +2, Miss).`);
+  console.log(`Generated ${deck.length} cards...`);
   
-  // Shuffle the deck
   deck = deck.sort(() => Math.random() - 0.5);
 }
 
@@ -148,6 +154,7 @@ function getCardImagePath(card, isFaceUp = true) {
 /* Draw card */
 function drawCard(hand) {
   if (deck.length === 0) {
+    // Basic reshuffle of played cards (not fully implemented, but covers empty deck)
     generateDeck(); 
   }
   const drawnCard = deck.pop();
@@ -180,7 +187,12 @@ function render() {
     const img = document.createElement("img");
     img.src = getCardImagePath(card, true); 
     img.className = "card-img";
-    img.onclick = () => playCard(index);
+    
+    // Only allow clicking if the game is not over
+    if (!gameOver) {
+        img.onclick = () => playCard(index);
+    }
+    
     img.alt = `${card.color} ${card.value}`; 
     handDiv.appendChild(img);
   });
@@ -188,24 +200,70 @@ function render() {
   // Computer Hand — card backs only
   const compDiv = document.getElementById("computerHand");
   compDiv.innerHTML = "";
-  computerHand.forEach((card) => {
+  computerHand.forEach(() => {
     const img = document.createElement("img");
-    img.src = getCardImagePath(card, false); 
+    img.src = CARD_BACK_IMAGE_PATH; 
     img.className = "card-img";
     img.alt = "Card Back";
     compDiv.appendChild(img);
   });
-
-  checkWinner();
 }
 
 /* Check if card playable */
 function canPlay(card) {
+  // Can play if color OR value match
   return card.color === topCard.color || card.value === topCard.value;
+}
+
+/* -------------------------------------
+  4. Action Card Logic Helpers (FIXED)
+------------------------------------- */
+
+function applyPlusTwoEffect(targetHand, targetName) {
+    if (gameOver) return;
+
+    drawCard(targetHand);
+    drawCard(targetHand);
+    
+    plusTwoActive = false; // Penalty applied
+    
+    setMessage(`💀 ${targetName} draws 2 cards and skips turn!`);
+    render();
+    
+    if (targetName === "You") {
+        // Player skipped, computer goes again
+        setTimeout(computerTurn, 1000); 
+    } else {
+        // Computer skipped, player's turn starts again
+        setTimeout(() => {
+            setMessage("Your turn now!");
+        }, 1000); 
+    }
+}
+
+function applySkipEffect(targetName) {
+    if (gameOver) return;
+
+    skipActive = false; // Penalty applied
+    
+    setMessage(`⏩ ${targetName}'s turn is skipped!`);
+    render();
+    
+    if (targetName === "You") {
+        // Player skipped, computer goes again
+        setTimeout(computerTurn, 1000); 
+    } else {
+        // Computer skipped, player's turn starts again
+        setTimeout(() => {
+            setMessage("Your turn now!");
+        }, 1000); 
+    }
 }
 
 /* Player plays card */
 function playCard(index) {
+  if (gameOver) return;
+
   const card = playerHand[index];
 
   if (!canPlay(card)) {
@@ -219,84 +277,168 @@ function playCard(index) {
   setMessage("You played a card. Computer's turn...");
   render();
 
+  if (checkWinner()) return;
+
+  // APPLY ACTION EFFECT
+  if (card.value === "+2") {
+    plusTwoActive = true; 
+    setMessage(`You played a +2. Computer must draw 2!`);
+    
+  } else if (card.value === "miss") {
+    skipActive = true;
+    setMessage(`You played a Skip. Computer's turn is skipped!`);
+  }
+  
   setTimeout(computerTurn, 900);
 }
 
-/* Player draws */
+/* Player draws (FIXED simplified logic) */
 document.getElementById("drawBtn").onclick = () => {
-  drawCard(playerHand);
-  setMessage("You drew a card. Computer's turn...");
+  if (gameOver) return;
+
+  // 1. Check for active +2 penalty first
+  if (plusTwoActive) {
+    drawCard(playerHand);
+    drawCard(playerHand);
+    setMessage("You drew 2 cards due to the +2 penalty. Computer's turn...");
+    plusTwoActive = false; 
+  } else {
+    // Normal draw logic
+    drawCard(playerHand);
+    setMessage("You drew a card. Computer's turn...");
+  }
+  
+  // No need to set skipActive = false here, as drawing a card passes the turn naturally.
+
   render();
+  // Pass the turn to the computer after the draw/penalty
   setTimeout(computerTurn, 900);
 };
 
-/* Computer turn logic */
+/* Computer turn logic (FIXED) */
 function computerTurn() {
-  let playable = computerHand.find(c => canPlay(c));
+    if (gameOver) return;
 
-  if (playable) {
-    topCard = playable;
-    const playedIndex = computerHand.findIndex(c => c.image === playable.image);
-    computerHand.splice(playedIndex, 1);
-    setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
+    // 1. Check for active Skip penalty first
+    if (skipActive) {
+        applySkipEffect("Computer");
+        return; 
+    }
     
-  } else {
-    drawCard(computerHand);
-    setMessage("🤖 Computer drew a card");
-  }
+    // 2. Check for active +2 penalty
+    if (plusTwoActive) {
+        applyPlusTwoEffect(computerHand, "Computer");
+        return; 
+    }
+    
+    // 3. Normal Turn Logic
+    let playable = computerHand.find(c => canPlay(c));
 
-  render();
+    if (playable) {
+        topCard = playable;
+        const playedIndex = computerHand.findIndex(c => c.image === playable.image);
+        computerHand.splice(playedIndex, 1);
+        setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
+        
+        render();
+
+        if (checkWinner()) return;
+
+        // Apply action card effects for the player
+        if (playable.value === "+2") {
+            plusTwoActive = true; 
+            setTimeout(() => {
+                applyPlusTwoEffect(playerHand, "You");
+            }, 500);
+            return; // Exit, as applyPlusTwoEffect handles the next computerTurn call if player skips
+        } else if (playable.value === "miss") {
+             skipActive = true; 
+             setTimeout(() => {
+                 applySkipEffect("You");
+             }, 500);
+             return; // Exit, as applySkipEffect handles the next computerTurn call if player skips
+        }
+        
+    } else {
+        drawCard(computerHand);
+        setMessage("🤖 Computer drew a card");
+        render();
+    }
+
+    // Since no action card was played OR an action was played but the turn wasn't skipped, 
+    // it's the player's turn now.
+    setTimeout(() => {
+        setMessage("Your turn now!");
+    }, 500);
 }
 
-/* *** NEW: Sound Effect Helpers *** */
+/* *** Sound Effect Helpers (Unchanged) *** */
 
 function playWinSound() {
-    MusicManager.stopMusic(); // Stop the background music
+    MusicManager.stopMusic(); 
     const winAudio = document.getElementById('win-sound');
     if (winAudio) {
-        winAudio.currentTime = 0; // Reset to ensure it plays from start
+        winAudio.currentTime = 0; 
         winAudio.volume = 0.8;
         winAudio.play().catch(error => console.error("Win sound playback failed:", error));
     }
 }
 
 function playLoseSound() {
-    MusicManager.stopMusic(); // Stop the background music
+    MusicManager.stopMusic(); 
     const loseAudio = document.getElementById('lose-sound');
     if (loseAudio) {
-        loseAudio.currentTime = 0; // Reset to ensure it plays from start
+        loseAudio.currentTime = 0; 
         loseAudio.volume = 0.8;
         loseAudio.play().catch(error => console.error("Lose sound playback failed:", error));
     }
 }
 
-/* Winner check (UPDATED) */
+/* Winner check (Unchanged) */
 function checkWinner() {
   if (playerHand.length === 0) {
-    setMessage("🎉 You win!");
-    playWinSound(); // Play win sound
+    setMessage("🎉 You win! Play again?");
+    playWinSound(); 
     disableGame();
+    return true;
   }
   if (computerHand.length === 0) {
-    setMessage("💀 Computer wins!");
-    playLoseSound(); // Play lose sound
+    setMessage("💀 Computer wins! Play again?");
+    playLoseSound(); 
     disableGame();
+    return true;
   }
+  return false;
 }
 
-/* Disable inputs */
+/* Disable inputs (Unchanged) */
 function disableGame() {
+  gameOver = true;
+  
   document.getElementById("drawBtn").disabled = true;
-  document.getElementById("playerHand").innerHTML = ""; 
+  
+  const handDiv = document.getElementById("playerHand");
+  handDiv.innerHTML = "";
+  
+  const button = document.createElement("button");
+  button.id = "playAgainBtn";
+  button.className = "bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-2xl font-bold shadow-xl mt-4";
+  button.innerText = "▶️ Start New Game";
+  
+  button.onclick = () => {
+      window.location.reload();
+  };
+  
+  handDiv.appendChild(button);
 }
 
-/* Message helper */
+/* Message helper (Unchanged) */
 function setMessage(msg) {
   document.getElementById("message").innerText = msg;
 }
 
 /* ------------------------------------
-      🎶 MUSIC MANAGER LOGIC 🎶 (UPDATED)
+      🎶 MUSIC MANAGER LOGIC 🎶 (Unchanged)
 ------------------------------------- */
 
 const themes = ["wonder", "voyage", "relax", "tense"];
@@ -304,54 +446,37 @@ let currentThemeIndex = -1;
 let currentAudio = null;
 let isMusicEnabled = false; 
 const TOGGLE_BUTTON = document.getElementById('musicToggleBtn');
-let rotationIntervalId = null; // To hold the interval timer
+let rotationIntervalId = null; 
 
 const MusicManager = {
-    // 1. Plays the next theme in the sequence
     playNextTheme() {
         if (!isMusicEnabled) return; 
-
-        this.stopMusic(); // Use the new stopMusic helper
-
-        // Cycle to the next theme
+        this.stopMusic(); 
         currentThemeIndex = (currentThemeIndex + 1) % themes.length;
         const nextThemeId = themes[currentThemeIndex] + "-theme";
-        
         currentAudio = document.getElementById(nextThemeId);
         
-        // Start playing the new track
         if (currentAudio) {
-            currentAudio.volume = 0.5; // Set a reasonable volume
-            // .play() must be in a Promise chain to handle browser policies
+            currentAudio.volume = 0.5; 
             currentAudio.play().catch(error => console.error("Music playback failed:", error));
-            
-            console.log(`Now Playing: ${themes[currentThemeIndex]}`);
         }
     },
     
-    // *** NEW: Centralized stop music function ***
     stopMusic() {
         if (currentAudio) {
             currentAudio.pause();
-            currentAudio.currentTime = 0; // Reset to start
+            currentAudio.currentTime = 0; 
         }
     },
 
-    // 2. Starts the automatic theme rotation
     startRotation() {
-        // Clear any existing interval before starting a new one
         if (rotationIntervalId) {
             clearInterval(rotationIntervalId);
         }
-        
-        // Start the first theme immediately
         this.playNextTheme();
-        
-        // Then, set an interval to switch themes every 60 seconds (60000ms)
         rotationIntervalId = setInterval(() => this.playNextTheme(), 60000); 
     },
     
-    // 3. Stops the rotation
     stopRotation() {
         if (rotationIntervalId) {
             clearInterval(rotationIntervalId);
@@ -359,7 +484,6 @@ const MusicManager = {
         }
     },
 
-    // 4. Toggles the entire system on/off
     toggleMusic() {
         isMusicEnabled = !isMusicEnabled;
         
@@ -369,25 +493,27 @@ const MusicManager = {
         } else {
             TOGGLE_BUTTON.innerText = "🔇 Music";
             this.stopRotation();
-            this.stopMusic(); // Stop the currently playing track
+            this.stopMusic(); 
         }
     }
 };
 
-// Add event listener to the button outside of the MusicManager object
 TOGGLE_BUTTON.addEventListener('click', () => {
     MusicManager.toggleMusic();
 });
 
 
 /* -------------------------------------
-  START GAME FUNCTION
+  START GAME FUNCTION (Unchanged)
 ------------------------------------- */
 
 function startGame() {
   generateDeck();
   playerHand = [];
   computerHand = [];
+  gameOver = false; 
+  plusTwoActive = false;
+  skipActive = false; // Reset action flags
 
   for (let i = 0; i < 5; i++) {
     drawCard(playerHand);
@@ -396,8 +522,7 @@ function startGame() {
 
   topCard = deck.pop();
   render();
-  
-  // NOTE: Music will only start when the user clicks the Mute/Play button.
+  setMessage("Game started! Your turn.");
 }
 
 startGame();

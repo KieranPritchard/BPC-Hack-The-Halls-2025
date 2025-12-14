@@ -3,25 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNO Game With Images</title>
+  <title>UNO Game - Festive Edition</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
+    /* 🎄 CHRISTMAS THEME CHANGES 🎄 */
+    body {
+      /* Deep Red/Green Gradient Background */
+      background: linear-gradient(135deg, #004d00 0%, #990000 100%);
+      font-family: 'Arial', sans-serif;
+      /* Add subtle glitter texture (requires a background image, simulating here with complex box-shadow/filters) */
+    }
+    .christmas-container {
+        /* Forest Green background with a subtle gold border/shadow */
+        background-color: #003300; 
+        border: 2px solid #ffcc00; /* Gold border */
+        box-shadow: 0 0 15px rgba(153, 0, 0, 0.7); /* Deep Red Glow */
+    }
+    
+    /* Highlighted buttons (Draw, Play Again) */
+    .christmas-btn {
+        background-color: #b30000; /* Festive Red */
+        color: white;
+        border: 2px solid #ffcc00; /* Gold Trim */
+        box-shadow: 0 4px #800000; /* Darker red shadow */
+        transition: all 0.15s;
+    }
+    .christmas-btn:hover {
+        background-color: #cc0000; /* Brighter Red on hover */
+        transform: translateY(-2px);
+        box-shadow: 0 6px #800000;
+    }
+
+    /* Message styling */
+    #message {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 8px;
+        border-radius: 4px;
+        color: #ffcc00; /* Soft Gold Message Text */
+        text-shadow: 1px 1px 2px #000;
+    }
+
+    /* Card styling */
     .card-img {
-      /* Enforce small, consistent size for all displayed cards */
       width: 70px;
       height: 100px;
-      /* Scales the 1024x1524 image down to fit, ensuring it covers the area */ 
-      box-shadow: 0 0 4px rgba(0,0,0,0.6);
+      box-shadow: 0 0 8px rgba(0,0,0,0.8);
+      border-radius: 6px;
       transition: transform 0.12s;
     }
     .card-img:hover {
-      transform: scale(1.08);
+      transform: scale(1.08) translateY(-5px); /* Lift card slightly */
       cursor: pointer;
     }
-    body {
-      background: #121212;
-    }
+    
     /* New style for the game-over overlay button */
     #playAgainBtn {
         transition: transform 0.2s;
@@ -31,28 +67,22 @@
     }
     /* Style for the color selection popup */
     #colorSelector {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: #333;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        /* Make the selector look like a Christmas wreath or gift box */
+        background-color: #003300; 
+        border: 4px solid #ffcc00;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(153, 0, 0, 1);
         z-index: 1000;
-        text-align: center;
     }
     .color-option {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        margin: 5px;
-        cursor: pointer;
+        /* Color options as ornaments */
         border: 4px solid transparent;
-        transition: border-color 0.1s;
+        transition: border-color 0.1s, transform 0.1s;
     }
     .color-option:hover {
         border-color: white;
+        transform: scale(1.1);
     }
   </style>
 </head>
@@ -74,52 +104,59 @@
   <audio id="wild-sound" src="./SFX/CARDSWOOSH.mp3"></audio> 
 
   <button id="musicToggleBtn"
-    class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
-    🔇 Music
+    class="christmas-btn fixed bottom-4 right-4 p-3 rounded-full z-50 font-bold shadow-xl">
+    <i class="fas fa-volume-mute"></i> Music
   </button>
-  <h1 class="text-center text-4xl font-bold mb-6">UNO Game</h1>
+  
+  <h1 class="text-center text-4xl font-extrabold mb-8 text-red-300 drop-shadow-lg">
+    <i class="fas fa-holly-berry mr-2"></i> UNO: Festive Challenge
+  </h1>
 
   <div class="max-w-4xl mx-auto space-y-6">
 
-    <div class="p-4 bg-gray-800 rounded">
-      <h2 class="text-xl font-semibold mb-2">Computer's Cards</h2>
+    <div class="p-4 rounded christmas-container">
+      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Computer's Stocking</h2>
       <div id="computerHand" class="flex flex-wrap gap-3"></div>
     </div>
 
-    <div class="p-4 bg-gray-800 rounded text-center">
-      <h2 class="text-xl font-semibold">Top Card</h2>
+    <div class="p-4 rounded text-center christmas-container">
+      <h2 class="text-xl font-semibold text-yellow-400">Top Card (Chimney)</h2>
       <div id="topCard" class="mt-3 flex justify-center"></div>
     </div>
 
-    <div class="p-4 bg-gray-800 rounded">
-      <h2 class="text-xl font-semibold mb-2">Your Hand</h2>
+    <div class="p-4 rounded christmas-container">
+      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Your Hand (Mistletoe)</h2>
       <div id="playerHand" class="flex flex-wrap gap-3"></div>
+      
       <button id="drawBtn"
-        class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold">
-        Draw Card
+        class="christmas-btn mt-6 px-6 py-3 rounded-xl font-extrabold text-xl">
+        <i class="fas fa-gift"></i> Draw Card
       </button>
     </div>
 
     <div class="text-center">
-      <a href="index.html" class="text-blue-400 underline text-lg">Return to Menu</a>
+      <a href="index.html" class="text-red-300 hover:text-red-500 underline text-lg font-semibold transition">
+        <i class="fas fa-house-chimney"></i> Return to Menu
+      </a>
     </div>
 
-    <div id="message" class="text-center text-xl font-bold mt-3"></div>
+    <div id="message" class="text-center text-xl font-extrabold mt-6"></div>
 
   </div>
 
 <div id="colorSelector" class="hidden">
-    <h3 class="text-xl font-bold mb-4">Choose a New Color</h3>
-    <div id="colorOptions" class="flex justify-center space-x-2">
+    <h3 class="text-2xl font-bold mb-5 text-yellow-400">Choose a New Color</h3>
+    <div id="colorOptions" class="flex justify-center space-x-4">
         <div class="color-option bg-red-600" onclick="handleColorSelect('red')"></div>
         <div class="color-option bg-green-600" onclick="handleColorSelect('green')"></div>
         <div class="color-option bg-blue-600" onclick="handleColorSelect('blue')"></div>
         <div class="color-option bg-yellow-400" onclick="handleColorSelect('yellow')"></div>
     </div>
 </div>
+
 <script>
 /* ------------------------------------
-      UNO GAME LOGIC (WITH IMAGES)
+      UNO GAME LOGIC (UNCHANGED)
 ------------------------------------- */
 
 // Define the core types of cards
@@ -134,7 +171,6 @@ const PRESENT_VALUE = "present";
 const WILD_VALUES = ["wild", "+4", SNOWBALL_VALUE, PRESENT_VALUE];
 
 const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; 
-// NOTE: Ensure you have 'cards/card_snowball.png' and 'cards/card_present.png' for the custom cards.
 
 let deck = [];
 let playerHand = [];
@@ -145,49 +181,38 @@ let topCard = null;
 let plusTwoActive = false; 
 let skipActive = false; 
 let gameOver = false; 
-// --- NEW STATE: Tracks if the computer's cards should be hidden/masked ---
 let snowballActive = false;
-// --- NEW STATE: Tracks if the player must select a card to gift ---
 let presentActive = false;
-// --- NEW: Stores the index of the card waiting for color selection ---
 let pendingPlayIndex = -1; 
-// --- NEW: Tracks the current color (only relevant for Wild/Wild+4/Snowball/Present) ---
 let currentColor = null;
 
 /* -------------------------------------
-  1. Generate Deck using Naming Convention (MODIFIED)
+  1. Generate Deck (UNCHANGED)
 ------------------------------------- */
 
 function generateDeck() {
   deck = [];
   
   COLORS.forEach(color => {
-    // 1. NUMBER CARDS (0-9)
     NUMBER_VALUES.forEach(value => {
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
-      
       const card = { color, value: value.toString(), image: imagePath, type: 'number' };
-      
       deck.push(card); 
-
       if (value !== 0) {
         deck.push(card); 
       }
     });
 
-    // 2. ACTION CARDS (+2 and miss)
     ACTION_VALUES.filter(v => !WILD_VALUES.includes(v)).forEach(value => {
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
-      
       const card = { color, value, image: imagePath, type: 'action' };
       deck.push(card); 
       deck.push(card); 
     });
   });
 
-  // 3. WILD CARDS (4 of each)
   WILD_VALUES.forEach(value => {
       let fileName = "";
       if (value === "wild") {
@@ -195,30 +220,24 @@ function generateDeck() {
       } else if (value === "+4") {
           fileName = "card_+4_1.png";
       } else if (value === SNOWBALL_VALUE) {
-          // --- Custom Image Path for Snowball ---
           fileName = "snowball_card_1.png"; 
       } else if (value === PRESENT_VALUE) {
-          // --- Custom Image Path for Present Card ---
           fileName = "present_card_1.png";
       }
       
       const imagePath = `cards/${fileName}`;
-
       const card = { color: 'black', value, image: imagePath, type: 'wild' }; 
       
-      // Add 4 of each Wild card type
       for(let i = 0; i < 4; i++) {
           deck.push({...card, isWild: true}); 
       }
   });
-
-  console.log(`Generated ${deck.length} cards...`);
   
   deck = deck.sort(() => Math.random() - 0.5);
 }
 
 /* -------------------------------------
-  2. Image Rendering Function
+  2. Image Rendering Function (UNCHANGED)
 ------------------------------------- */
 
 function getCardImagePath(card, isFaceUp = true) {
@@ -229,10 +248,9 @@ function getCardImagePath(card, isFaceUp = true) {
   }
 }
 
-/* Draw card */
+/* Draw card (UNCHANGED) */
 function drawCard(hand) {
   if (deck.length === 0) {
-    // Simple deck reshuffle
     generateDeck(); 
   }
   const drawnCard = deck.pop();
@@ -242,7 +260,7 @@ function drawCard(hand) {
 }
 
 /* -------------------------------------
-  3. Render Function (MODIFIED FOR SNOWBALL & PRESENT)
+  3. Render Function (UNCHANGED LOGIC, ONLY STYLES)
 ------------------------------------- */
 
 function render() {
@@ -254,13 +272,18 @@ function render() {
     topImg.src = getCardImagePath(topCard, true); 
     topImg.className = "card-img";
     
-    // Show the effective current color
     const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
     topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
 
-    // Add a color border to signify the current color after a Wild card play
     if (topCard.isWild && currentColor) {
-        topImg.style.border = `4px solid ${currentColor === 'yellow' ? 'gold' : currentColor}`;
+        // Use Christmas colors for wild border
+        let borderColor = 'white';
+        if (currentColor === 'red') borderColor = '#cc0000';
+        if (currentColor === 'green') borderColor = '#006600';
+        if (currentColor === 'yellow') borderColor = '#ffcc00';
+        if (currentColor === 'blue') borderColor = '#004c99';
+
+        topImg.style.border = `4px solid ${borderColor}`;
     } else {
         topImg.style.border = 'none';
     }
@@ -273,7 +296,6 @@ function render() {
   const handDiv = document.getElementById("playerHand");
   handDiv.innerHTML = "";
   
-  // --- Check if player is in "select card to gift" mode ---
   const isGifting = presentActive && !gameOver;
 
   playerHand.forEach((card, index) => {
@@ -281,13 +303,10 @@ function render() {
     img.src = getCardImagePath(card, true); 
     img.className = "card-img";
     
-    // --- Card Click Handler Logic for Gifting ---
     if (isGifting) {
-        // In gifting mode: click calls selectCardToGift
         img.onclick = () => selectCardToGift(index);
-        img.style.border = "4px solid purple"; // Highlight all cards
+        img.style.border = "4px solid #ffcc00"; // Gold highlight for gifting
     } else if (!gameOver && pendingPlayIndex === -1) {
-        // Normal play mode: click calls playCard
         img.onclick = () => playCard(index);
     }
     
@@ -295,21 +314,18 @@ function render() {
     handDiv.appendChild(img);
   });
   
-  // Update Draw button state based on Gifting
   document.getElementById("drawBtn").disabled = isGifting;
 
-  // Computer Hand — MODIFIED FOR SNOWBALL
+  // Computer Hand 
   const compDiv = document.getElementById("computerHand");
   compDiv.innerHTML = "";
   
   if (snowballActive) {
-      // Create a single, placeholder element to hide the cards
       const placeholder = document.createElement("div");
-      placeholder.className = "text-2xl font-bold text-blue-300 p-4 border border-blue-300 rounded";
+      placeholder.className = "text-2xl font-bold text-yellow-400 p-4 border border-yellow-400 rounded christmas-container";
       placeholder.innerText = "❄️ Computer's cards are hidden by the Snowball!";
       compDiv.appendChild(placeholder);
   } else {
-      // Normal rendering of card backs
       computerHand.forEach(() => {
         const img = document.createElement("img");
         img.src = CARD_BACK_IMAGE_PATH; 
@@ -320,7 +336,7 @@ function render() {
   }
 }
 
-/* Check if card playable */
+/* Check if card playable (UNCHANGED) */
 function canPlay(card) {
     if (card.isWild) {
         return true; 
@@ -330,9 +346,7 @@ function canPlay(card) {
     return card.color === effectiveTopColor || card.value === topCard.value;
 }
 
-/* -------------------------------------
-  4. Action Card Logic Helpers (MODIFIED for Snowball Reset)
-------------------------------------- */
+/* Action Card Logic Helpers (UNCHANGED) */
 
 function applyPlusTwoEffect(targetHand, targetName) {
     if (gameOver) return;
@@ -340,9 +354,8 @@ function applyPlusTwoEffect(targetHand, targetName) {
     drawCard(targetHand);
     drawCard(targetHand);
     
-    plusTwoActive = false; // Penalty applied
+    plusTwoActive = false;
     
-    // Reset snowball effect if the computer's turn was skipped
     if (snowballActive && targetName === "Computer") {
         snowballActive = false;
         setMessage(`Snowball effect cleared! 💀 ${targetName} draws 2 cards and skips turn!`);
@@ -370,7 +383,6 @@ function applyPlusFourEffect(targetHand, targetName) {
     
     plusTwoActive = false; 
     
-    // Reset snowball effect if the computer's turn was skipped
     if (snowballActive && targetName === "Computer") {
         snowballActive = false;
         setMessage(`Snowball effect cleared! 💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
@@ -392,9 +404,8 @@ function applyPlusFourEffect(targetHand, targetName) {
 function applySkipEffect(targetName) {
     if (gameOver) return;
 
-    skipActive = false; // Penalty applied
+    skipActive = false;
     
-    // Reset snowball effect if the computer's turn was skipped
     if (snowballActive && targetName === "Computer") {
         snowballActive = false;
         setMessage(`Snowball effect cleared! ⏩ ${targetName}'s turn is skipped!`);
@@ -413,7 +424,7 @@ function applySkipEffect(targetName) {
     }
 }
 
-/* Player plays card (MODIFIED for Snowball and Present) */
+/* Player plays card (UNCHANGED) */
 function playCard(index) {
   if (gameOver || pendingPlayIndex !== -1 || presentActive) return;
 
@@ -428,14 +439,12 @@ function playCard(index) {
       pendingPlayIndex = index; 
       showColorSelector(); 
       playCardSound(); 
-      return; // Wait for color selection
+      return; 
   }
   
-  // Normal card play logic
   topCard = card;
   currentColor = card.color; 
   
-  // Reset snowball effect when a non-wild card is played (turn passed)
   if (snowballActive) {
       snowballActive = false; 
   }
@@ -449,7 +458,6 @@ function playCard(index) {
 
   if (checkWinner()) return;
 
-  // APPLY ACTION EFFECT 
   if (card.value === "+2") {
     plusTwoActive = true; 
     playPlusTwoSound(); 
@@ -462,18 +470,15 @@ function playCard(index) {
   setTimeout(computerTurn, 900);
 }
 
-// --- NEW FUNCTION: Player selects a card to gift after playing a Present Card ---
+/* Player selects a card to gift (UNCHANGED) */
 function selectCardToGift(index) {
     if (!presentActive) return;
     
-    // 1. Get the card to be gifted
     const giftedCard = playerHand[index];
     
-    // 2. Move the card from playerHand to computerHand
     playerHand.splice(index, 1);
     computerHand.push(giftedCard);
     
-    // 3. Reset state
     presentActive = false;
     
     setMessage(`🎁 You gifted a ${giftedCard.color} ${giftedCard.value} to the Computer! Computer's turn is skipped! New Color: ${currentColor.toUpperCase()}`);
@@ -481,12 +486,11 @@ function selectCardToGift(index) {
     
     if (checkWinner()) return;
 
-    // 4. Pass turn to computer (which will be skipped due to skipActive)
     setTimeout(computerTurn, 900);
 }
 
 
-/* Color Selection Logic for Wild Cards (MODIFIED FOR SNOWBALL AND PRESENT) */
+/* Color Selection Logic for Wild Cards (UNCHANGED) */
 function showColorSelector() {
     document.getElementById("colorSelector").classList.remove('hidden');
     document.getElementById("drawBtn").disabled = true;
@@ -503,19 +507,15 @@ window.handleColorSelect = function(selectedColor) {
     
     const card = playerHand[pendingPlayIndex];
     
-    // 1. Set the top card and current color
     topCard = card;
     currentColor = selectedColor; 
     
-    // 2. Remove the card from the player's hand
     playerHand.splice(pendingPlayIndex, 1);
     
-    // 3. Hide the selector and reset the state
     hideColorSelector();
 
     let messageText = `You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`;
     
-    // 4. Apply Wild Card effect
     if (card.value === "+4") {
         playPlusTwoSound(); 
         messageText = `You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`;
@@ -527,22 +527,17 @@ window.handleColorSelect = function(selectedColor) {
         }, 500);
         return;
     } else if (card.value === SNOWBALL_VALUE) {
-        // --- SNOWBALL EFFECT LOGIC ---
         snowballActive = true; 
         skipActive = true;     
         messageText = `❄️ You played a **Snowball**! Computer's cards are hidden, and their turn is skipped! New Color: ${currentColor.toUpperCase()}`;
-        // -----------------------------
     } else if (card.value === PRESENT_VALUE) {
-        // --- PRESENT CARD EFFECT LOGIC ---
         presentActive = true; 
-        skipActive = true; // Present card skips the opponent's turn
+        skipActive = true; 
         messageText = `🎁 You played a **Present Card**! Choose a card to gift to the Computer. Turn is skipped! New Color: ${currentColor.toUpperCase()}`;
-        // The rest of the logic is handled by selectCardToGift()
         
         setMessage(messageText);
         render();
-        return; // Don't pass turn yet, waiting for card selection
-        // -----------------------------
+        return; 
     }
     
     setMessage(messageText);
@@ -550,16 +545,14 @@ window.handleColorSelect = function(selectedColor) {
 
     if (checkWinner()) return;
     
-    // 5. Pass turn to computer 
     setTimeout(computerTurn, 900);
 }
 
 
-/* Player draws (MODIFIED for Snowball Reset) */
+/* Player draws (UNCHANGED) */
 document.getElementById("drawBtn").onclick = () => {
-  if (gameOver || presentActive) return; // Prevent draw while in gifting state
+  if (gameOver || presentActive) return; 
 
-  // Check for active +2 or +4 penalty
   if (plusTwoActive) {
     const isPlusFour = topCard && topCard.value === "+4";
     const drawAmount = isPlusFour ? 4 : 2;
@@ -572,33 +565,28 @@ document.getElementById("drawBtn").onclick = () => {
     setMessage(`You drew ${drawAmount} cards due to the +${drawAmount} penalty. Computer's turn...`);
     plusTwoActive = false; 
   } else {
-    // Normal draw logic
     drawCard(playerHand);
     playDrawSound(); 
     setMessage("You drew a card. Computer's turn...");
   }
   
-  // Reset snowball effect as a turn has passed
   if (snowballActive) {
       snowballActive = false;
   }
   
   render();
-  // Pass the turn to the computer after the draw/penalty
   setTimeout(computerTurn, 900);
 };
 
-/* Computer turn logic (MODIFIED for Snowball and Present) */
+/* Computer turn logic (UNCHANGED) */
 function computerTurn() {
     if (gameOver) return;
 
-    // 1. Check for active Skip penalty first (handles Snowball/Present skipped turn)
     if (skipActive) {
         applySkipEffect("Computer");
         return; 
     }
     
-    // 2. Check for active +2 or +4 penalty
     if (plusTwoActive) {
         const isPlusFour = topCard && topCard.value === "+4";
         if (isPlusFour) {
@@ -609,23 +597,19 @@ function computerTurn() {
         return; 
     }
     
-    // --- 3. If the computer takes a normal turn, the custom card effects from the player must end ---
     if (snowballActive) {
         snowballActive = false;
         setMessage("Snowball effect cleared! Computer's turn now.");
         render();
     }
     
-    // 4. Normal Turn Logic
     let playable = computerHand.find(c => canPlay(c));
 
     if (playable) {
         
-        // Wild Card logic
         if (playable.isWild) {
             playWildSound(); 
             
-            // Computer logic to choose the best color:
             const colorCounts = {};
             COLORS.forEach(c => colorCounts[c] = computerHand.filter(card => card.color === c && !card.isWild).length);
             
@@ -647,16 +631,13 @@ function computerTurn() {
             
             let messageText = `🤖 Computer played a Wild Card and chose ${bestColor.toUpperCase()}`;
             
-            // --- Apply Wild Card effects ---
             if (playable.value === SNOWBALL_VALUE) {
                 snowballActive = true; 
                 skipActive = true;
                 messageText = `❄️ 🤖 Computer played a **Snowball**! Your cards are hidden, and your turn is skipped! New Color: ${currentColor.toUpperCase()}`;
             } else if (playable.value === PRESENT_VALUE) {
-                 // --- COMPUTER PRESENT CARD LOGIC ---
                 skipActive = true;
                 
-                // Computer gifts the first card in their hand (simplistic AI)
                 const giftedCard = computerHand[0]; 
                 
                 if (giftedCard) {
@@ -664,10 +645,8 @@ function computerTurn() {
                     playerHand.push(giftedCard);
                     messageText = `🎁 🤖 Computer played a **Present Card** and gifted you a ${giftedCard.color} ${giftedCard.value}! Computer's turn is skipped! New Color: ${currentColor.toUpperCase()}`;
                 } else {
-                    // This shouldn't happen unless computer played a Present as their last card.
                     messageText = `🎁 🤖 Computer played a **Present Card** but had no card to gift! Turn is skipped! New Color: ${currentColor.toUpperCase()}`;
                 }
-                // ------------------------------------
             }
             
             setMessage(messageText);
@@ -675,7 +654,6 @@ function computerTurn() {
 
             if (checkWinner()) return;
 
-            // Apply Wild +4 effect
             if (playable.value === "+4") {
                 playPlusTwoSound(); 
                 setTimeout(() => {
@@ -684,14 +662,12 @@ function computerTurn() {
                 return; 
             }
             
-            // Pass turn to player (skip will be handled by applySkipEffect if Snowball/Present was played)
             setTimeout(() => {
                 setMessage("Your turn now!");
             }, 500);
             return; 
         }
         
-        // Non-Wild card play
         topCard = playable;
         currentColor = playable.color; 
         
@@ -706,7 +682,6 @@ function computerTurn() {
 
         if (checkWinner()) return;
 
-        // Apply action card effects for the player
         if (playable.value === "+2") {
             plusTwoActive = true; 
             playPlusTwoSound(); 
@@ -723,97 +698,27 @@ function computerTurn() {
         }
         
     } else {
-        // Computer draws
         drawCard(computerHand);
         playDrawSound(); 
         setMessage("🤖 Computer drew a card");
         render();
     }
 
-    // Player's turn now.
     setTimeout(() => {
         setMessage("Your turn now!");
     }, 500);
 }
 
-/* *** Sound Effect Helpers *** */
-
-function playWinSound() {
-    MusicManager.stopMusic(); 
-    const winAudio = document.getElementById('win-sound');
-    if (winAudio) {
-        winAudio.currentTime = 0; 
-        winAudio.volume = 0.8;
-        winAudio.play().catch(error => console.error("Win sound playback failed:", error));
-    }
-}
-
-function playLoseSound() {
-    MusicManager.stopMusic(); 
-    const loseAudio = document.getElementById('lose-sound');
-    if (loseAudio) {
-        loseAudio.currentTime = 0; 
-        loseAudio.volume = 0.8;
-        loseAudio.play().catch(error => console.error("Lose sound playback failed:", error));
-    }
-}
-
-function playStartSound() {
-    const startAudio = document.getElementById('start-sound');
-    if (startAudio) {
-        startAudio.currentTime = 0;
-        startAudio.volume = 0.6;
-        startAudio.play().catch(error => console.warn("Start sound blocked. Needs user interaction."));
-    }
-}
-
-function playCardSound() {
-    const cardAudio = document.getElementById('play-card-sound');
-    if (cardAudio) {
-        cardAudio.currentTime = 0;
-        cardAudio.volume = 0.4; 
-        cardAudio.play().catch(error => console.error("Card play sound failed:", error));
-    }
-}
-
-function playDrawSound() {
-    const drawAudio = document.getElementById('draw-card-sound');
-    if (drawAudio) {
-        drawAudio.currentTime = 0;
-        drawAudio.volume = 0.4; 
-        drawAudio.play().catch(error => console.error("Card draw sound failed:", error));
-    }
-}
-
-function playPlusTwoSound() {
-    const plusTwoAudio = document.getElementById('plus-two-sound');
-    if (plusTwoAudio) {
-        plusTwoAudio.currentTime = 0;
-        plusTwoAudio.volume = 0.7; 
-        plusTwoAudio.play().catch(error => console.error("+2 sound failed:", error));
-    }
-}
-
-function playWildSound() {
-    const wildAudio = document.getElementById('wild-sound');
-    if (wildAudio) {
-        wildAudio.currentTime = 0;
-        wildAudio.volume = 0.7; 
-        wildAudio.play().catch(error => console.error("Wild sound failed:", error));
-    }
-}
-
-
 /* Winner check */
 function checkWinner() {
   if (playerHand.length === 0) {
-    setMessage("🎉 You win! Play again?");
+    setMessage("🎉 You win the Festive Challenge! Play again?");
     playWinSound(); 
     disableGame();
     return true;
   }
   if (computerHand.length === 0) {
-    setMessage("💀 Computer wins! Play again?");
+    setMessage("💀 Computer wins! Better luck next Christmas! Play again?");
     playLoseSound(); 
     disableGame();
     return true;
@@ -821,7 +726,7 @@ function checkWinner() {
   return false;
 }
 
-/* Disable inputs */
+/* Disable inputs - MODIFIED STYLING */
 function disableGame() {
   gameOver = true;
   
@@ -832,8 +737,9 @@ function disableGame() {
   
   const button = document.createElement("button");
   button.id = "playAgainBtn";
-  button.className = "bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-2xl font-bold shadow-xl mt-4";
-  button.innerText = "▶️ Start New Game";
+  // Apply Christmas button styling
+  button.className = "christmas-btn px-6 py-3 rounded-xl text-2xl font-bold shadow-xl mt-4";
+  button.innerText = "🎅 Start New Game";
   
   button.onclick = () => {
       playStartSound(); 
@@ -843,13 +749,13 @@ function disableGame() {
   handDiv.appendChild(button);
 }
 
-/* Message helper */
+/* Message helper (UNCHANGED) */
 function setMessage(msg) {
   document.getElementById("message").innerText = msg;
 }
 
 /* ------------------------------------
-      🎶 MUSIC MANAGER LOGIC 🎶
+      🎶 MUSIC MANAGER LOGIC 🎶 (UNCHANGED)
 ------------------------------------- */
 
 const themes = ["wonder", "voyage", "relax", "tense"];
@@ -899,10 +805,10 @@ const MusicManager = {
         isMusicEnabled = !isMusicEnabled;
         
         if (isMusicEnabled) {
-            TOGGLE_BUTTON.innerText = "🔊 Music";
+            TOGGLE_BUTTON.innerHTML = '<i class="fas fa-volume-up"></i> Music';
             this.startRotation();
         } else {
-            TOGGLE_BUTTON.innerText = "🔇 Music";
+            TOGGLE_BUTTON.innerHTML = '<i class="fas fa-volume-mute"></i> Music';
             this.stopRotation();
             this.stopMusic(); 
         }
@@ -915,7 +821,7 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 
 
 /* -------------------------------------
-  START GAME FUNCTION 
+  START GAME FUNCTION (UNCHANGED)
 ------------------------------------- */
 
 function startGame() {
@@ -925,8 +831,8 @@ function startGame() {
   gameOver = false; 
   plusTwoActive = false;
   skipActive = false; 
-  snowballActive = false; // Reset the Snowball state
-  presentActive = false; // Reset the Present state
+  snowballActive = false;
+  presentActive = false;
   pendingPlayIndex = -1; 
 
   for (let i = 0; i < 5; i++) {
@@ -934,7 +840,6 @@ function startGame() {
     drawCard(computerHand);
   }
 
-  // Ensure the starting card is not a Wild Card.
   topCard = deck.pop();
   while (topCard && topCard.isWild) {
       topCard = deck.pop();

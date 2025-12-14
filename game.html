@@ -32,6 +32,9 @@
   <audio id="relax-theme" loop src="./soundtrack/relax.mp3"></audio>
   <audio id="tense-theme" loop src="./soundtrack/tense.mp3"></audio>
 
+  <audio id="win-sound" src="./SFX/VICTORY.mp3"></audio>
+  <audio id="lose-sound" src="./SFX/LOST.mp3"></audio>
+
   <button id="musicToggleBtn"
     class="fixed bottom-4 right-4 bg-gray-600 hover:bg-gray-700 p-2 rounded-full z-50 text-white font-bold shadow-lg">
     🔇 Music
@@ -245,14 +248,38 @@ function computerTurn() {
   render();
 }
 
-/* Winner check */
+/* *** NEW: Sound Effect Helpers *** */
+
+function playWinSound() {
+    MusicManager.stopMusic(); // Stop the background music
+    const winAudio = document.getElementById('win-sound');
+    if (winAudio) {
+        winAudio.currentTime = 0; // Reset to ensure it plays from start
+        winAudio.volume = 0.8;
+        winAudio.play().catch(error => console.error("Win sound playback failed:", error));
+    }
+}
+
+function playLoseSound() {
+    MusicManager.stopMusic(); // Stop the background music
+    const loseAudio = document.getElementById('lose-sound');
+    if (loseAudio) {
+        loseAudio.currentTime = 0; // Reset to ensure it plays from start
+        loseAudio.volume = 0.8;
+        loseAudio.play().catch(error => console.error("Lose sound playback failed:", error));
+    }
+}
+
+/* Winner check (UPDATED) */
 function checkWinner() {
   if (playerHand.length === 0) {
     setMessage("🎉 You win!");
+    playWinSound(); // Play win sound
     disableGame();
   }
   if (computerHand.length === 0) {
     setMessage("💀 Computer wins!");
+    playLoseSound(); // Play lose sound
     disableGame();
   }
 }
@@ -269,7 +296,7 @@ function setMessage(msg) {
 }
 
 /* ------------------------------------
-      🎶 MUSIC MANAGER LOGIC 🎶
+      🎶 MUSIC MANAGER LOGIC 🎶 (UPDATED)
 ------------------------------------- */
 
 const themes = ["wonder", "voyage", "relax", "tense"];
@@ -284,11 +311,7 @@ const MusicManager = {
     playNextTheme() {
         if (!isMusicEnabled) return; 
 
-        // Stop the current track
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.currentTime = 0; // Reset to start
-        }
+        this.stopMusic(); // Use the new stopMusic helper
 
         // Cycle to the next theme
         currentThemeIndex = (currentThemeIndex + 1) % themes.length;
@@ -303,6 +326,14 @@ const MusicManager = {
             currentAudio.play().catch(error => console.error("Music playback failed:", error));
             
             console.log(`Now Playing: ${themes[currentThemeIndex]}`);
+        }
+    },
+    
+    // *** NEW: Centralized stop music function ***
+    stopMusic() {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0; // Reset to start
         }
     },
 
@@ -338,10 +369,7 @@ const MusicManager = {
         } else {
             TOGGLE_BUTTON.innerText = "🔇 Music";
             this.stopRotation();
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
-            }
+            this.stopMusic(); // Stop the currently playing track
         }
     }
 };

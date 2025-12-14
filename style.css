@@ -1,9 +1,9 @@
 /* Christmas Background: Deep Red/Green Gradient */
 body {
-    background: linear-gradient(135deg, #004d00 0%, #cc0000 100%); /* Dark Green to Deep Red */
-    height: 100vh;
-    overflow: hidden;
+    /* Deep Red/Green Gradient Background */
+    background: linear-gradient(135deg, #004d00 0%, #990000 100%);
     font-family: 'Arial', sans-serif;
+    /* Add subtle glitter texture (requires a background image, simulating here with complex box-shadow/filters) */
 }
 
 /* UNO Logo with Festive Gold Glow */
@@ -33,3 +33,73 @@ body {
 .snowflake:nth-child(4) { animation-duration: 10s; left: 50%; font-size: 20px; animation-delay: 6s; }
 .snowflake:nth-child(5) { animation-duration: 13s; left: 65%; font-size: 40px; animation-delay: 8s; }
 .snowflake:nth-child(6) { animation-duration: 8s; left: 80%; font-size: 28px; animation-delay: 1s; }
+
+.christmas-container {
+    /* Forest Green background with a subtle gold border/shadow */
+    background-color: #003300; 
+    border: 2px solid #ffcc00; /* Gold border */
+    box-shadow: 0 0 15px rgba(153, 0, 0, 0.7); /* Deep Red Glow */
+}
+
+/* Highlighted buttons (Draw, Play Again) */
+.christmas-btn {
+    background-color: #b30000; /* Festive Red */
+    color: white;
+    border: 2px solid #ffcc00; /* Gold Trim */
+    box-shadow: 0 4px #800000; /* Darker red shadow */
+    transition: all 0.15s;
+}
+.christmas-btn:hover {
+    background-color: #cc0000; /* Brighter Red on hover */
+    transform: translateY(-2px);
+    box-shadow: 0 6px #800000;
+}
+
+/* Message styling */
+#message {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 4px;
+    color: #ffcc00; /* Soft Gold Message Text */
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* Card styling */
+.card-img {
+    width: 70px;
+    height: 100px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.8);
+    border-radius: 6px;
+    transition: transform 0.12s;
+}
+.card-img:hover {
+    transform: scale(1.08) translateY(-5px); /* Lift card slightly */
+    cursor: pointer;
+}
+
+/* New style for the game-over overlay button */
+#playAgainBtn {
+    transition: transform 0.2s;
+}
+#playAgainBtn:hover {
+    transform: scale(1.05);
+}
+/* Style for the color selection popup */
+#colorSelector {
+    /* Make the selector look like a Christmas wreath or gift box */
+    background-color: #003300; 
+    border: 4px solid #ffcc00;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(153, 0, 0, 1);
+    z-index: 1000;
+}
+.color-option {
+    /* Color options as ornaments */
+    border: 4px solid transparent;
+    transition: border-color 0.1s, transform 0.1s;
+}
+.color-option:hover {
+    border-color: white;
+    transform: scale(1.1);
+}

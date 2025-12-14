@@ -62,7 +62,7 @@
   <audio id="wonder-theme" loop src="./soundtrack/wonder.mp3"></audio>
   <audio id="voyage-theme" loop src="./soundtrack/voyage.mp3"></audio>
   <audio id="relax-theme" loop src="./soundtrack/relax.mp3"></audio>
-  <audio id="tense-theme" loop src="./soundtrack/tense.mp3"></audio>
+  <audio id="tense-theme" src="./soundtrack/tense.mp3"></audio>
 
   <audio id="win-sound" src="./SFX/VICTORY.mp3"></audio>
   <audio id="lose-sound" src="./SFX/LOST.mp3"></audio>
@@ -125,13 +125,15 @@
 // Define the core types of cards
 const COLORS = ["red", "green", "blue", "yellow"];
 const NUMBER_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-// --- MODIFIED ACTION VALUES TO INCLUDE WILDS ---
 const ACTION_VALUES = ["+2", "miss", "wild", "+4"]; 
-// --- NEW CONSTANT FOR WILDS ---
-const WILD_VALUES = ["wild", "+4"];
 
-// --- UPDATED CARD BACK PATH ---
+// --- NEW CONSTANTS FOR CUSTOM CARD ---
+const SNOWBALL_VALUE = "snowball";
+// --- UPDATED WILD VALUES TO INCLUDE SNOWBALL ---
+const WILD_VALUES = ["wild", "+4", SNOWBALL_VALUE];
+
 const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; 
+// NOTE: Ensure you have 'cards/card_snowball.png' for the Snowball card image.
 
 let deck = [];
 let playerHand = [];
@@ -142,9 +144,11 @@ let topCard = null;
 let plusTwoActive = false; 
 let skipActive = false; 
 let gameOver = false; 
+// --- NEW STATE: Tracks if the computer's cards should be hidden/masked ---
+let snowballActive = false;
 // --- NEW: Stores the index of the card waiting for color selection ---
 let pendingPlayIndex = -1; 
-// --- NEW: Tracks the current color (only relevant for Wild/Wild+4) ---
+// --- NEW: Tracks the current color (only relevant for Wild/Wild+4/Snowball) ---
 let currentColor = null;
 
 /* -------------------------------------
@@ -170,7 +174,6 @@ function generateDeck() {
     });
 
     // 2. ACTION CARDS (+2 and miss)
-    // Filter out wild cards since they are not color-specific initially
     ACTION_VALUES.filter(v => !WILD_VALUES.includes(v)).forEach(value => {
       const fileName = `${color}_${value}.png`;
       const imagePath = `cards/${fileName}`;
@@ -181,18 +184,25 @@ function generateDeck() {
     });
   });
 
-  // 3. WILD CARDS (4 of each) --- ADDED FOR WILDS ---
+  // 3. WILD CARDS (4 of each)
   WILD_VALUES.forEach(value => {
-      const fileName = value === "wild" ? "wildcard_1.png" : "card_+4_1.png";
+      let fileName = "";
+      if (value === "wild") {
+          fileName = "wildcard_1.png";
+      } else if (value === "+4") {
+          fileName = "card_+4_1.png";
+      } else if (value === SNOWBALL_VALUE) {
+          // --- Custom Image Path for Snowball ---
+          fileName = "snowball_card_1.png"; 
+      }
+      
       const imagePath = `cards/${fileName}`;
 
-      // Wild cards are generated without a color. The color property will be set
-      // dynamically when played. We use a placeholder 'black' color.
       const card = { color: 'black', value, image: imagePath, type: 'wild' }; 
       
       // Add 4 of each Wild card type
       for(let i = 0; i < 4; i++) {
-          deck.push({...card, isWild: true}); // Add a helper property
+          deck.push({...card, isWild: true}); 
       }
   });
 
@@ -216,7 +226,7 @@ function getCardImagePath(card, isFaceUp = true) {
 /* Draw card */
 function drawCard(hand) {
   if (deck.length === 0) {
-    // Basic reshuffle of played cards (not fully implemented, but covers empty deck)
+    // Simple deck reshuffle
     generateDeck(); 
   }
   const drawnCard = deck.pop();
@@ -226,7 +236,7 @@ function drawCard(hand) {
 }
 
 /* -------------------------------------
-  3. Render Function (MODIFIED)
+  3. Render Function (MODIFIED FOR SNOWBALL)
 ------------------------------------- */
 
 function render() {
@@ -238,7 +248,7 @@ function render() {
     topImg.src = getCardImagePath(topCard, true); 
     topImg.className = "card-img";
     
-    // --- MODIFIED: Show the actual current color on the UI ---
+    // Show the effective current color
     const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
     topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
 
@@ -248,7 +258,6 @@ function render() {
     } else {
         topImg.style.border = 'none';
     }
-    // --------------------------------------------------------
 
     top.appendChild(topImg);
   }
@@ -262,7 +271,6 @@ function render() {
     img.src = getCardImagePath(card, true); 
     img.className = "card-img";
     
-    // Only allow clicking if the game is not over AND color selector is not visible
     if (!gameOver && pendingPlayIndex === -1) {
         img.onclick = () => playCard(index);
     }
@@ -271,34 +279,40 @@ function render() {
     handDiv.appendChild(img);
   });
 
-  // Computer Hand — card backs only
+  // Computer Hand — MODIFIED FOR SNOWBALL
   const compDiv = document.getElementById("computerHand");
   compDiv.innerHTML = "";
-  computerHand.forEach(() => {
-    const img = document.createElement("img");
-    img.src = CARD_BACK_IMAGE_PATH; 
-    img.className = "card-img";
-    img.alt = "Card Back";
-    compDiv.appendChild(img);
-  });
+  
+  if (snowballActive) {
+      // Create a single, placeholder element to hide the cards
+      const placeholder = document.createElement("div");
+      placeholder.className = "text-2xl font-bold text-blue-300 p-4 border border-blue-300 rounded";
+      placeholder.innerText = "❄️ Computer's cards are hidden by the Snowball!";
+      compDiv.appendChild(placeholder);
+  } else {
+      // Normal rendering of card backs
+      computerHand.forEach(() => {
+        const img = document.createElement("img");
+        img.src = CARD_BACK_IMAGE_PATH; 
+        img.className = "card-img";
+        img.alt = "Card Back";
+        compDiv.appendChild(img);
+      });
+  }
 }
 
-/* Check if card playable (MODIFIED) */
+/* Check if card playable */
 function canPlay(card) {
-    // --- ADDED/MODIFIED FOR WILD CARDS ---
     if (card.isWild) {
-        return true; // Wild cards can be played anytime
+        return true; 
     }
-    // Get the effective color for the top card (the color set by a previous wild)
     const effectiveTopColor = topCard.isWild && currentColor ? currentColor : topCard.color;
 
-    // Can play if color OR value match
     return card.color === effectiveTopColor || card.value === topCard.value;
-    // ------------------------------------
 }
 
 /* -------------------------------------
-  4. Action Card Logic Helpers (MODIFIED)
+  4. Action Card Logic Helpers (MODIFIED for Snowball Reset)
 ------------------------------------- */
 
 function applyPlusTwoEffect(targetHand, targetName) {
@@ -309,7 +323,14 @@ function applyPlusTwoEffect(targetHand, targetName) {
     
     plusTwoActive = false; // Penalty applied
     
-    setMessage(`💀 ${targetName} draws 2 cards and skips turn!`);
+    // Reset snowball effect if the computer's turn was skipped
+    if (snowballActive && targetName === "Computer") {
+        snowballActive = false;
+        setMessage(`Snowball effect cleared! 💀 ${targetName} draws 2 cards and skips turn!`);
+    } else {
+        setMessage(`💀 ${targetName} draws 2 cards and skips turn!`);
+    }
+    
     render();
     
     if (targetName === "You") {
@@ -321,7 +342,6 @@ function applyPlusTwoEffect(targetHand, targetName) {
     }
 }
 
-// --- NEW FUNCTION FOR +4 EFFECT ---
 function applyPlusFourEffect(targetHand, targetName) {
     if (gameOver) return;
 
@@ -329,9 +349,16 @@ function applyPlusFourEffect(targetHand, targetName) {
         drawCard(targetHand);
     }
     
-    plusTwoActive = false; // Using the same flag for turn skip for simplicity
+    plusTwoActive = false; 
     
-    setMessage(`💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
+    // Reset snowball effect if the computer's turn was skipped
+    if (snowballActive && targetName === "Computer") {
+        snowballActive = false;
+        setMessage(`Snowball effect cleared! 💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
+    } else {
+        setMessage(`💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
+    }
+    
     render();
     
     if (targetName === "You") {
@@ -342,14 +369,20 @@ function applyPlusFourEffect(targetHand, targetName) {
         }, 1000); 
     }
 }
-// -----------------------------------
 
 function applySkipEffect(targetName) {
     if (gameOver) return;
 
     skipActive = false; // Penalty applied
     
-    setMessage(`⏩ ${targetName}'s turn is skipped!`);
+    // Reset snowball effect if the computer's turn was skipped
+    if (snowballActive && targetName === "Computer") {
+        snowballActive = false;
+        setMessage(`Snowball effect cleared! ⏩ ${targetName}'s turn is skipped!`);
+    } else {
+        setMessage(`⏩ ${targetName}'s turn is skipped!`);
+    }
+    
     render();
     
     if (targetName === "You") {
@@ -361,7 +394,7 @@ function applySkipEffect(targetName) {
     }
 }
 
-/* Player plays card (MODIFIED) */
+/* Player plays card (MODIFIED for Snowball) */
 function playCard(index) {
   if (gameOver || pendingPlayIndex !== -1) return;
 
@@ -372,18 +405,22 @@ function playCard(index) {
     return;
   }
   
-  // --- ADDED/MODIFIED FOR WILD CARDS ---
   if (card.isWild) {
-      pendingPlayIndex = index; // Store the card's index
+      pendingPlayIndex = index; 
       showColorSelector(); 
-      playCardSound(); // Play sound immediately for feedback
+      playCardSound(); 
       return; // Wait for color selection
   }
-  // ------------------------------------
   
   // Normal card play logic
   topCard = card;
-  currentColor = card.color; // Set/Reset the current color
+  currentColor = card.color; 
+  
+  // Reset snowball effect when a non-wild card is played (turn passed)
+  if (snowballActive) {
+      snowballActive = false; 
+  }
+  
   playerHand.splice(index, 1);
   
   playCardSound();
@@ -406,10 +443,9 @@ function playCard(index) {
   setTimeout(computerTurn, 900);
 }
 
-// --- NEW: Color Selection Logic for Wild Cards ---
+/* Color Selection Logic for Wild Cards (MODIFIED FOR SNOWBALL) */
 function showColorSelector() {
     document.getElementById("colorSelector").classList.remove('hidden');
-    // Disable main draw button while color selector is active
     document.getElementById("drawBtn").disabled = true;
 }
 
@@ -426,7 +462,7 @@ window.handleColorSelect = function(selectedColor) {
     
     // 1. Set the top card and current color
     topCard = card;
-    currentColor = selectedColor; // This is the crucial step
+    currentColor = selectedColor; 
     
     // 2. Remove the card from the player's hand
     playerHand.splice(pendingPlayIndex, 1);
@@ -434,34 +470,43 @@ window.handleColorSelect = function(selectedColor) {
     // 3. Hide the selector and reset the state
     hideColorSelector();
 
-    setMessage(`You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`);
-    render();
-
-    if (checkWinner()) return;
-
+    let messageText = `You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`;
+    
     // 4. Apply Wild Card effect
     if (card.value === "+4") {
-        playPlusTwoSound(); // Use the +2 sound for the +4 effect
-        setMessage(`You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`);
+        playPlusTwoSound(); 
+        messageText = `You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`;
+        setMessage(messageText);
+        render();
+        if (checkWinner()) return;
         setTimeout(() => {
             applyPlusFourEffect(computerHand, "Computer");
         }, 500);
         return;
+    } else if (card.value === SNOWBALL_VALUE) {
+        // --- SNOWBALL EFFECT LOGIC ---
+        snowballActive = true; 
+        skipActive = true;     
+        messageText = `❄️ You played a **Snowball**! Computer's cards are hidden, and their turn is skipped! New Color: ${currentColor.toUpperCase()}`;
+        // -----------------------------
     }
     
-    // 5. Pass turn to computer for a plain 'wild' card
+    setMessage(messageText);
+    render();
+
+    if (checkWinner()) return;
+    
+    // 5. Pass turn to computer 
     setTimeout(computerTurn, 900);
 }
-// ----------------------------------------------------
 
 
-/* Player draws (MODIFIED) */
+/* Player draws (MODIFIED for Snowball Reset) */
 document.getElementById("drawBtn").onclick = () => {
   if (gameOver) return;
 
-  // 1. Check for active +2 or +4 penalty first (+4 uses plusTwoActive flag for simplicity)
+  // Check for active +2 or +4 penalty
   if (plusTwoActive) {
-    // Check if the penalty is from a +2 or a +4, though they draw different amounts
     const isPlusFour = topCard && topCard.value === "+4";
     const drawAmount = isPlusFour ? 4 : 2;
 
@@ -479,16 +524,21 @@ document.getElementById("drawBtn").onclick = () => {
     setMessage("You drew a card. Computer's turn...");
   }
   
+  // Reset snowball effect as a turn has passed
+  if (snowballActive) {
+      snowballActive = false;
+  }
+  
   render();
   // Pass the turn to the computer after the draw/penalty
   setTimeout(computerTurn, 900);
 };
 
-/* Computer turn logic (MODIFIED) */
+/* Computer turn logic (MODIFIED for Snowball) */
 function computerTurn() {
     if (gameOver) return;
 
-    // 1. Check for active Skip penalty first
+    // 1. Check for active Skip penalty first (handles Snowball skipped turn)
     if (skipActive) {
         applySkipEffect("Computer");
         return; 
@@ -505,22 +555,27 @@ function computerTurn() {
         return; 
     }
     
-    // 3. Normal Turn Logic
+    // --- 3. If the computer takes a normal turn, the Snowball effect from the player must end ---
+    if (snowballActive) {
+        snowballActive = false;
+        setMessage("Snowball effect cleared! Computer's turn now.");
+        render();
+    }
+    
+    // 4. Normal Turn Logic
     let playable = computerHand.find(c => canPlay(c));
 
     if (playable) {
         
-        // --- ADDED/MODIFIED FOR WILD CARDS ---
+        // Wild Card logic
         if (playable.isWild) {
-            playWildSound(); // Play Wild sound for computer
+            playWildSound(); 
             
             // Computer logic to choose the best color:
-            // 1. Pick a color it has the most of.
-            // 2. Default to the current color if it has none.
             const colorCounts = {};
             COLORS.forEach(c => colorCounts[c] = computerHand.filter(card => card.color === c && !card.isWild).length);
             
-            let bestColor = 'red'; // Default just in case
+            let bestColor = 'red'; 
             let maxCount = -1;
             
             COLORS.forEach(c => {
@@ -530,16 +585,22 @@ function computerTurn() {
                 }
             });
 
-            // Set the top card and the new current color
             topCard = playable;
             currentColor = bestColor; 
 
-            // Remove the card
             const playedIndex = computerHand.findIndex(c => c.image === playable.image);
             computerHand.splice(playedIndex, 1);
             
-            setMessage(`🤖 Computer played a Wild Card and chose ${bestColor.toUpperCase()}`);
+            let messageText = `🤖 Computer played a Wild Card and chose ${bestColor.toUpperCase()}`;
             
+            // --- Apply Snowball effect if played by computer ---
+            if (playable.value === SNOWBALL_VALUE) {
+                snowballActive = true; 
+                skipActive = true;
+                messageText = `❄️ 🤖 Computer played a **Snowball**! Your cards are hidden, and your turn is skipped! New Color: ${currentColor.toUpperCase()}`;
+            }
+            
+            setMessage(messageText);
             render();
 
             if (checkWinner()) return;
@@ -553,17 +614,17 @@ function computerTurn() {
                 return; 
             }
             
-            // Plain Wild card: pass turn to player
+            // Pass turn to player (skip will be handled by applySkipEffect if Snowball was played)
             setTimeout(() => {
                 setMessage("Your turn now!");
             }, 500);
-            return; // Skip the rest of the turn logic
+            return; 
         }
-        // ------------------------------------
         
         // Non-Wild card play
         topCard = playable;
-        currentColor = playable.color; // Reset current color
+        currentColor = playable.color; 
+        
         const playedIndex = computerHand.findIndex(c => c.image === playable.image);
         computerHand.splice(playedIndex, 1);
         
@@ -605,7 +666,7 @@ function computerTurn() {
     }, 500);
 }
 
-/* *** Sound Effect Helpers (ADDED Wild Sound) *** */
+/* *** Sound Effect Helpers *** */
 
 function playWinSound() {
     MusicManager.stopMusic(); 
@@ -658,17 +719,16 @@ function playPlusTwoSound() {
     const plusTwoAudio = document.getElementById('plus-two-sound');
     if (plusTwoAudio) {
         plusTwoAudio.currentTime = 0;
-        plusTwoAudio.volume = 0.7; // Higher volume for impact
+        plusTwoAudio.volume = 0.7; 
         plusTwoAudio.play().catch(error => console.error("+2 sound failed:", error));
     }
 }
 
-// NEW: Function to play the Wild card sound
 function playWildSound() {
     const wildAudio = document.getElementById('wild-sound');
     if (wildAudio) {
         wildAudio.currentTime = 0;
-        wildAudio.volume = 0.7; // Higher volume for impact
+        wildAudio.volume = 0.7; 
         wildAudio.play().catch(error => console.error("Wild sound failed:", error));
     }
 }
@@ -706,9 +766,7 @@ function disableGame() {
   button.innerText = "▶️ Start New Game";
   
   button.onclick = () => {
-      // Play sound before reloading
       playStartSound(); 
-      // Reload the page to restart the game
       setTimeout(() => window.location.reload(), 100); 
   };
   
@@ -787,7 +845,7 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 
 
 /* -------------------------------------
-  START GAME FUNCTION (MODIFIED)
+  START GAME FUNCTION 
 ------------------------------------- */
 
 function startGame() {
@@ -797,22 +855,22 @@ function startGame() {
   gameOver = false; 
   plusTwoActive = false;
   skipActive = false; 
-  pendingPlayIndex = -1; // Reset new state variable
+  snowballActive = false; // Reset the Snowball state
+  pendingPlayIndex = -1; 
 
   for (let i = 0; i < 5; i++) {
     drawCard(playerHand);
     drawCard(computerHand);
   }
 
-  // Ensure the starting card is not a Wild Card. If it is, draw until it's not.
+  // Ensure the starting card is not a Wild Card.
   topCard = deck.pop();
   while (topCard && topCard.isWild) {
-      // Put the wild card back (or discard it for simplicity) and draw a new one
       topCard = deck.pop();
   }
   
   if (topCard) {
-      currentColor = topCard.color; // Initialize the current color
+      currentColor = topCard.color; 
   }
 
   render();

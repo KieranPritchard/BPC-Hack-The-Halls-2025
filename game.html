@@ -346,34 +346,44 @@ function drawCard(hand) {
 }
 
 /* -------------------------------------
-  3. Render Function (UNCHANGED LOGIC, ONLY STYLES)
+  3. Render Function
 ------------------------------------- */
 
 function render() {
-  // Top Card
+  // gets the top Card
   const top = document.getElementById("topCard");
+  // Sets the inner html to nothing
   top.innerHTML = "";
+  // Checks if there is a top card
   if (topCard) {
+    // Creates the top image elemetn
     const topImg = document.createElement("img");
-    topImg.src = getCardImagePath(topCard, true); 
+    // Gets the src of of of the top image using the get image path function
+    topImg.src = getCardImagePath(topCard, true);
+    // sets the top image class name  
     topImg.className = "card-img";
     
+    // Checks the display colour
     const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+    // Sets the alt text
     topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
 
+    // Checks if the card is wild if there is a current colour
     if (topCard.isWild && currentColor) {
         // Use Christmas colors for wild border
-        let borderColor = 'white';
-        if (currentColor === 'red') borderColor = '#cc0000';
-        if (currentColor === 'green') borderColor = '#006600';
-        if (currentColor === 'yellow') borderColor = '#ffcc00';
-        if (currentColor === 'blue') borderColor = '#004c99';
+        let borderColor = 'white'; // Sets the border colour to white
+        if (currentColor === 'red') borderColor = '#cc0000'; // Sets the border colour to red
+        if (currentColor === 'green') borderColor = '#006600'; // sets the border colour to green
+        if (currentColor === 'yellow') borderColor = '#ffcc00'; // sets the border colour to yellow
+        if (currentColor === 'blue') borderColor = '#004c99'; // sets the border colour to blue
 
+        // Creates a border around the image 
         topImg.style.border = `4px solid ${borderColor}`;
     } else {
+        // Sets the border to none
         topImg.style.border = 'none';
     }
-
+    // Adds the top card image to the top card element
     top.appendChild(topImg);
   }
 

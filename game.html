@@ -159,36 +159,47 @@
       UNO GAME LOGIC
 ------------------------------------- */
 
-// Define the core types of cards
-const COLORS = ["red", "green", "blue", "yellow"];
-const NUMBER_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const ACTION_VALUES = ["+2", "miss", "wild", "+4"]; 
+// Defines the core types of cards
+const COLORS = ["red", "green", "blue", "yellow"]; // Stores the colours used in the program
+const NUMBER_VALUES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]; // Stores the numbers of main cards
+const ACTION_VALUES = ["+2", "miss", "wild", "+4"];  // Stores the original action values for the game
 
 // --- NEW PRESENT CARD CONSTANTS ---
-const SNOWBALL_VALUE = "snowball";
-const PRESENT_VALUE = "present"; 
+const SNOWBALL_VALUE = "snowball"; // Stores the value of the snowball
+const PRESENT_VALUE = "present";  // Stores the present value of the game
 // --- UPDATED WILD VALUES TO INCLUDE SNOWBALL AND PRESENT ---
-const WILD_VALUES = ["wild", "+4", SNOWBALL_VALUE, PRESENT_VALUE];
+const WILD_VALUES = ["wild", "+4", SNOWBALL_VALUE, PRESENT_VALUE]; // Stores all the wildcards values
 
-const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; 
+const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; // Gets the card back image  
 
+// Stores the current deck
 let deck = [];
+// Stores the player hand
 let playerHand = [];
+// Stores the computer hand
 let computerHand = [];
+// stores the current top card
 let topCard = null;
 
 // --- STATE VARIABLES ---
+
+// Flags for if the special cards are active
 let plusTwoActive = false; 
-let skipActive = false; 
-let gameOver = false; 
+let skipActive = false;
 let snowballActive = false;
 let presentActive = false;
+// tracks if the game is over
+let gameOver = false;
+// tracks the next card in the deck
 let pendingPlayIndex = -1; 
+// Tracks the current colours
 let currentColor = null;
 
 /* ------------------------------------
-      🎵 AUDIO HELPER FUNCTIONS (FIXED: THESE WERE MISSING) 🎵
+      🎵 AUDIO HELPER FUNCTIONS 🎵
 ------------------------------------- */
+
+// function that plays the start sound
 function playStartSound() { 
     document.getElementById("start-sound").play().catch(e => console.error("Start sound failed:", e)); 
 }

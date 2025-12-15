@@ -53,7 +53,7 @@
         border: 3px solid white;
         transition: transform 0.1s;
     }
-    
+
     /* Hover animation for hover */
     .color-option:hover {
         transform: scale(1.1);
@@ -61,67 +61,91 @@
   </style>
 </head>
 
+<!-- Background styling for the page -->
 <body class="text-white p-6" style="background-color: #3b0000;">
 
+  <!-- background music that is rotated by a javascript function -->
   <audio id="wonder-theme" loop src="./soundtrack/GAMETHEME3-WONDER.mp3"></audio>
   <audio id="voyage-theme" loop src="./soundtrack/GAMETHEME2-VOYAGE.mp3"></audio>
   <audio id="relax-theme" loop src="./soundtrack/GAMETHEME1-RELAX.mp3"></audio>
   <audio id="tense-theme" src="./soundtrack/GAMETHEME4-TENSE.mp3"></audio>
 
+  <!-- Win, loose and start sounds that are triggered by a javascript function -->
   <audio id="win-sound" src="./SFX/VICTORY.mp3"></audio>
   <audio id="lose-sound" src="./SFX/LOST.mp3"></audio>
   <audio id="start-sound" src="./SFX/CHALLENGE.mp3"></audio>
   
+  <!-- card sounds that are triggered by a javascript function -->
   <audio id="play-card-sound" src="./SFX/PLACECARD.mp3"></audio>
   <audio id="draw-card-sound" src="./SFX/CARDSWOOSH.mp3"></audio>
   <audio id="plus-two-sound" src="./SFX/PLUS2.mp3"></audio> 
   <audio id="wild-sound" src="./SFX/CARDSWOOSH.mp3"></audio> 
 
+  <!-- Button that toggles music on/off -->
   <button id="musicToggleBtn"
     class="christmas-btn fixed bottom-4 right-4 p-3 rounded-full z-50 font-bold shadow-xl">
     <i class="fas fa-volume-mute"></i> Music
   </button>
   
+  <!-- Game page main heading -->
   <h1 class="text-center text-4xl font-extrabold mb-8 text-red-300 drop-shadow-lg">
+    <!-- Holly icon -->
     <i class="fas fa-holly-berry mr-2"></i> UNO: Festive Challenge
   </h1>
 
+  <!-- Centered container -->
   <div class="max-w-4xl mx-auto space-y-6">
-
+    <!-- Computer hand -->
     <div class="p-4 rounded christmas-container">
       <h2 class="text-xl font-semibold mb-2 text-yellow-400">Computer's Stocking</h2>
+      <!-- Stores the computers cards which are handled via javascript -->
       <div id="computerHand" class="flex flex-wrap gap-3"></div>
     </div>
-
+    
+    <!-- Top card container -->
     <div class="p-4 rounded text-center christmas-container">
       <h2 class="text-xl font-semibold text-yellow-400">Top Card (Chimney)</h2>
+      <!-- Stores the top card which are handled via javascript -->
       <div id="topCard" class="mt-3 flex justify-center"></div>
     </div>
 
+    <!-- Player hand container -->
     <div class="p-4 rounded christmas-container">
       <h2 class="text-xl font-semibold mb-2 text-yellow-400">Your Hand (Mistletoe)</h2>
+      <!-- Stores the cards -->
       <div id="playerHand" class="flex flex-wrap gap-3"></div>
       
+      <!-- Draw button to draw a card from the deck -->
       <button id="drawBtn"
         class="christmas-btn mt-6 px-6 py-3 rounded-xl font-extrabold text-xl">
+        <!-- Gift icon -->
         <i class="fas fa-gift"></i> Draw Card
       </button>
     </div>
 
+    <!-- Link to return the user to the menu -->
     <div class="text-center">
+      <!-- Link back to index page -->
       <a href="index.html" class="text-red-300 hover:text-red-500 underline text-lg font-semibold transition">
+        <!-- Chimmy icon -->
         <i class="fas fa-house-chimney"></i> Return to Menu
       </a>
     </div>
-
+    
+    <!-- Message box that changes based on javascript function -->
     <div id="message" class="text-center text-xl font-extrabold mt-6"></div>
 
   </div>
 
-<div id="colorSelector" class="hidden fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-50">
-    <div class="p-8 rounded christmas-container text-center">
+<!-- Colour selector modal -->
+<div id="colorSelector" class="hidden flex fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-50">
+  <!-- Centered div -->  
+  <div class="p-8 rounded christmas-container text-center">
+        <!-- Heading text to find new colour -->
         <h3 class="text-2xl font-bold mb-5 text-yellow-400">Choose a New Color</h3>
+        <!-- list of colour options -->
         <div id="colorOptions" class="flex justify-center space-x-4">
+            <!-- Colour options which are updated based on handle colour select function which uses the colour as a parameter -->
             <div class="color-option bg-red-600" onclick="handleColorSelect('red')"></div>
             <div class="color-option bg-green-600" onclick="handleColorSelect('green')"></div>
             <div class="color-option bg-blue-600" onclick="handleColorSelect('blue')"></div>

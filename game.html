@@ -575,8 +575,10 @@ function applySkipEffect(targetName) {
     render();
      
     if (targetName === "You") {
+        // Sets the computer turn timeout to 10 seconds
         setTimeout(computerTurn, 1000); 
     } else {
+        // Sets the message
         setTimeout(() => {
             setMessage("Your turn now!");
         }, 1000); 
@@ -585,169 +587,229 @@ function applySkipEffect(targetName) {
 
 /* Player plays card (UNCHANGED) */
 function playCard(index) {
+  // Checks if the game is over or there is a pending play or present active
   if (gameOver || pendingPlayIndex !== -1 || presentActive) return;
-
+  // Gets the card from the player hand
   const card = playerHand[index];
-
+  // Checks if the card can be played
   if (!canPlay(card)) {
+    // Sets the message
     setMessage("❌ You can't play that card!");
     return;
   }
-  
+  // Checks if the card is wild
   if (card.isWild) {
+      // Sets the pending play index to the index
       pendingPlayIndex = index; 
       showColorSelector(); 
       playCardSound(); 
       return; 
   }
-  
+  // Sets the  top card to the card
   topCard = card;
+  // Sets the current colour to the card colour
   currentColor = card.color; 
-  
+  // Checks if the snowball is active
   if (snowballActive) {
+    // Sets the snowball to not active
       snowballActive = false; 
   }
   
+  // Removes the card from the player hand
   playerHand.splice(index, 1);
+
   
   playCardSound();
-  
+  // Sets the message
   setMessage("You played a card. Computer's turn...");
+  // Calls the render function
   render();
-
+  // Checks if there is a winner
   if (checkWinner()) return;
-
+  // Checks if the card value is +2
   if (card.value === "+2") {
+    // Sets the plus two to active
     plusTwoActive = true; 
+    // Plays the plus two sound
     playPlusTwoSound(); 
+    // Sets the message
     setMessage(`You played a +2. Computer must draw 2!`);
   } else if (card.value === "miss") {
+    // Sets the skip active to true
     skipActive = true;
+    // Sets the message
     setMessage(`You played a Skip. Computer's turn is skipped!`);
   }
-  
+  // Sets the computer turn timeout to 900 milliseconds
   setTimeout(computerTurn, 900);
 }
 
 /* Player selects a card to gift (UNCHANGED) */
 function selectCardToGift(index) {
+  // Checks if the game is over or present is not active
     if (!presentActive) return;
-    
+    // Gets the gifted card from the player hand
     const giftedCard = playerHand[index];
     
+    // Sets the top card to the gifted card
     playerHand.splice(index, 1);
+
+    // Adds the gifted card to the computer hand
     computerHand.push(giftedCard);
     
+    // Sets present active to false
     presentActive = false;
     
+    // Sets the message
     setMessage(`🎁 You gifted a ${giftedCard.color} ${giftedCard.value} to the Computer! Computer's turn is skipped! New Color: ${currentColor.toUpperCase()}`);
+
+    // Calls the render function
     render();
     
+    // Checks for a winner
     if (checkWinner()) return;
-
+    // Sets the computer turn timeout to 900 milliseconds
     setTimeout(computerTurn, 900);
 }
 
 
 /* Color Selection Logic for Wild Cards (UNCHANGED) */
 function showColorSelector() {
+  // Shows the color selector modal
     document.getElementById("colorSelector").classList.remove('hidden');
+    // Disables the draw button
     document.getElementById("drawBtn").disabled = true;
 }
 
 function hideColorSelector() {
+  // Hides the color selector modal
     document.getElementById("colorSelector").classList.add('hidden');
+  // Enables the draw button
     document.getElementById("drawBtn").disabled = false;
+    // Resets the pending play index
     pendingPlayIndex = -1;
 }
 
 window.handleColorSelect = function(selectedColor) {
+    // Checks if there is a pending play index
     if (pendingPlayIndex === -1) return;
     
+    // Gets the card from the player hand
     const card = playerHand[pendingPlayIndex];
     
+    // Sets the top card and current color
     topCard = card;
     currentColor = selectedColor; 
-    
+    // Removes the card from the player hand
     playerHand.splice(pendingPlayIndex, 1);
     
+    // Hides the color selector
     hideColorSelector();
-
+  
+    // Displays the message
     let messageText = `You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`;
-    
+
     if (card.value === "+4") {
+      // Plays the plus four sound
         playPlusTwoSound(); 
+        // Updates the message text
         messageText = `You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`;
         setMessage(messageText);
         render();
+        // Checks for a winner
         if (checkWinner()) return;
+        // Sets the timeout to apply the plus four effect
         setTimeout(() => {
             applyPlusFourEffect(computerHand, "Computer");
         }, 500);
         return;
+    // Checks if the card value is snowball
     } else if (card.value === SNOWBALL_VALUE) {
+        // Sets the snowball active to true
         snowballActive = true; 
+        // Sets the skip active to true
         skipActive = true;     
+        // Updates the message text
         messageText = `❄️ You played a **Snowball**! Computer's cards are hidden, and their turn is skipped! New Color: ${currentColor.toUpperCase()}`;
+    // Checks if the card value is present
     } else if (card.value === PRESENT_VALUE) {
+        // Sets the present active to true
         presentActive = true; 
+        // Sets the skip active to true
         skipActive = true; 
+        // Updates the message text
         messageText = `🎁 You played a **Present Card**! Choose a card to gift to the Computer. Turn is skipped! New Color: ${currentColor.toUpperCase()}`;
-        
+        // Sets the message
         setMessage(messageText);
         render();
         return; 
     }
     
+    // Sets the message
     setMessage(messageText);
     render();
-
+    // Checks for a winner
     if (checkWinner()) return;
-    
+    // Sets the computer turn timeout to 900 milliseconds
     setTimeout(computerTurn, 900);
 }
 
 
 /* Player draws (UNCHANGED) */
 document.getElementById("drawBtn").onclick = () => {
+  // Checks if the game is over or present is active
   if (gameOver || presentActive) return; 
-
+  // Checks if plus two is active
   if (plusTwoActive) {
+    // Gets the top card 
     const isPlusFour = topCard && topCard.value === "+4";
+    // Determines the draw amount
     const drawAmount = isPlusFour ? 4 : 2;
-
+    // Loops over the draw amount to draw the cards
     for (let i = 0; i < drawAmount; i++) {
+        // Calls the draw card function
         drawCard(playerHand);
     }
-    
+    // Plays the draw sound
     playDrawSound(); 
+    // Sets the message
     setMessage(`You drew ${drawAmount} cards due to the +${drawAmount} penalty. Computer's turn...`);
+    // Sets plus two active to false
     plusTwoActive = false; 
   } else {
+    // Calls the draw card function
     drawCard(playerHand);
+    // Plays the draw sound
     playDrawSound(); 
+    // Sets the message
     setMessage("You drew a card. Computer's turn...");
   }
-  
+  // Checks if snowball is active
   if (snowballActive) {
+    // Sets snowball active to false
       snowballActive = false;
   }
-  
+  // Calls the render function
   render();
+  // Sets the computer turn timeout to 900 milliseconds
   setTimeout(computerTurn, 900);
 };
 
 /* Computer turn logic (UNCHANGED) */
 function computerTurn() {
+  // Checks if the game is over
     if (gameOver) return;
-
+    // Checks if skip is active
     if (skipActive) {
+        // Applies the skip effect to the computer
         applySkipEffect("Computer");
         return; 
     }
-    
+    // Checks if plus two is active
     if (plusTwoActive) {
+        // Gets if the top card is plus four
         const isPlusFour = topCard && topCard.value === "+4";
+        // Applies the plus two or plus four effect to the computer
         if (isPlusFour) {
             applyPlusFourEffect(computerHand, "Computer");
         } else {
@@ -755,45 +817,62 @@ function computerTurn() {
         }
         return; 
     }
-    
+    // Checks if snowball is active
     if (snowballActive) {
+      // Sets snowball active to false
         snowballActive = false;
+        // Sets the message
         setMessage("Snowball effect cleared! Computer's turn now.");
+        // Calls the render function
         render();
     }
-    
+    // Finds a playable card in the computer hand
     let playable = computerHand.find(c => canPlay(c));
-
+    // Checks if there is a playable card
     if (playable) {
-        
+        // Checks if the card is wild
         if (playable.isWild) {
+          // Plays the wild sound
             playWildSound(); 
             
+            // Computer chooses the best color based on its hand
             const colorCounts = {};
+            // Initialises the color counts
             COLORS.forEach(c => colorCounts[c] = computerHand.filter(card => card.color === c && !card.isWild).length);
             
+            // Finds the color with the maximum count
             let bestColor = 'red'; 
             let maxCount = -1;
-            
+
             COLORS.forEach(c => {
+              // Checks if the color count is greater than the max count
                 if (colorCounts[c] > maxCount) {
+                  // Updates the max count and best color
                     maxCount = colorCounts[c];
                     bestColor = c;
                 }
             });
-
+            // Sets the top card to the playable card
             topCard = playable;
             currentColor = bestColor; 
 
+            // Removes the played card from the computer hand
             const playedIndex = computerHand.findIndex(c => c.image === playable.image);
             computerHand.splice(playedIndex, 1);
-            
+
+            // Displays the message
             let messageText = `🤖 Computer played a Wild Card and chose ${bestColor.toUpperCase()}`;
             
+            // Checks if the playable value is snowball
             if (playable.value === SNOWBALL_VALUE) {
+                // Sets snowball active to true
                 snowballActive = true; 
+                // Sets skip active to true
                 skipActive = true;
+                // Updates the message text
                 messageText = `❄️ 🤖 Computer played a **Snowball**! Your cards are hidden, and your turn is skipped! New Color: ${currentColor.toUpperCase()}`;
+
+              // Checks if the playable value is present
             } else if (playable.value === PRESENT_VALUE) {
                 skipActive = true;
                 
@@ -801,33 +880,42 @@ function computerTurn() {
                 let giftedCardIndex = -1;
                 let lowestValue = 10;
                 
+                // Loops through the computer hand to find the lowest value card
                 computerHand.forEach((card, index) => {
+                  // Parses the card value to an integer
                     const value = parseInt(card.value);
+                    // Checks if the value is a number and less than the lowest value
                     if (!isNaN(value) && value < lowestValue) {
+                      // Updates the lowest value and gifted card index
                         lowestValue = value;
+                        // Sets the gifted card index
                         giftedCardIndex = index;
                     }
                 });
-
+                // Gets the gifted card from the computer hand 
                 const giftedCard = giftedCardIndex !== -1 ? computerHand[giftedCardIndex] : computerHand[0]; 
-                
+                // Checks if there is a gifted card
                 if (giftedCard) {
+                    // Removes the gifted card from the computer hand and adds it to the player hand
                     computerHand.splice(giftedCardIndex !== -1 ? giftedCardIndex : 0, 1);
+                    // Adds the gifted card to the player hand
                     playerHand.push(giftedCard);
+                    // Updates the message text
                     messageText = `🎁 🤖 Computer played a **Present Card** and gifted you a ${giftedCard.color} ${giftedCard.value}! Computer's turn is skipped! New Color: ${currentColor.toUpperCase()}`;
                 } else {
                     messageText = `🎁 🤖 Computer played a **Present Card** but had no card to gift! Turn is skipped! New Color: ${currentColor.toUpperCase()}`;
                 }
             }
-            
+            // Displays the message
             setMessage(messageText);
             render();
-
+            // Checks for a winner
             if (checkWinner()) return;
-
+            // Handles +4 effect
             if (playable.value === "+4") {
                 playPlusTwoSound(); 
                 setTimeout(() => {
+                  // Applies the plus four effect to the player
                     applyPlusFourEffect(playerHand, "You");
                 }, 500);
                 return; 
@@ -838,36 +926,41 @@ function computerTurn() {
             }, 500);
             return; 
         }
-        
+        // Sets the top card and current color to the playable card 
         topCard = playable;
         currentColor = playable.color; 
         
+        // Removes the played card from the computer hand
         const playedIndex = computerHand.findIndex(c => c.image === playable.image);
         computerHand.splice(playedIndex, 1);
-        
+        // Plays the play card sound
         playCardSound(); 
-
+        // Sets the message
         setMessage(`🤖 Computer played ${playable.color} ${playable.value}`);
         
         render();
-
+        // Checks for a winner
         if (checkWinner()) return;
 
+        // Checks if the playable value is +2
         if (playable.value === "+2") {
+          // Sets plus two active to true
             plusTwoActive = true; 
             playPlusTwoSound(); 
             setTimeout(() => {
                 applyPlusTwoEffect(playerHand, "You");
             }, 500);
             return; 
+        // Checks if the playable value is miss
         } else if (playable.value === "miss") {
+            // Sets skip active to true
              skipActive = true; 
              setTimeout(() => {
                  applySkipEffect("You");
              }, 500);
              return; 
         }
-        
+    // No playable card found, computer draws a card
     } else {
         drawCard(computerHand);
         playDrawSound(); 
@@ -885,12 +978,14 @@ function checkWinner() {
   if (playerHand.length === 0) {
     setMessage("🎉 You win the Festive Challenge! Play again?");
     playWinSound(); 
+    // Disables the game
     disableGame();
     return true;
   }
   if (computerHand.length === 0) {
     setMessage("💀 Computer wins! Better luck next Christmas! Play again?");
     playLoseSound(); 
+    // Disables the game
     disableGame();
     return true;
   }
@@ -899,24 +994,27 @@ function checkWinner() {
 
 /* Disable inputs - MODIFIED STYLING */
 function disableGame() {
+  // Sets game over to true
   gameOver = true;
   
+  // Disables the draw button
   document.getElementById("drawBtn").disabled = true;
-  
+  // Clears the player hand div
   const handDiv = document.getElementById("playerHand");
   handDiv.innerHTML = "";
-  
+  // Creates a new button element
   const button = document.createElement("button");
   button.id = "playAgainBtn";
-  // Apply Christmas button styling
+  // Apply Christmas button styling and add text
   button.className = "christmas-btn px-6 py-3 rounded-xl text-2xl font-bold shadow-xl mt-4";
   button.innerText = "🎅 Start New Game";
-  
+  // Sets the onclick to reload the page
   button.onclick = () => {
+      // Restarts the game
       playStartSound(); 
       setTimeout(() => window.location.reload(), 100); 
   };
-  
+  // Appends the button to the hand div
   handDiv.appendChild(button);
 }
 
@@ -929,34 +1027,42 @@ function setMessage(msg) {
       🎶 MUSIC MANAGER LOGIC 🎶 (UNCHANGED)
 ------------------------------------- */
 
+// List of theme IDs
 const themes = ["wonder", "voyage", "relax", "tense"];
 let currentThemeIndex = -1;
 let currentAudio = null;
 let isMusicEnabled = false; 
+// Gets the toggle button element
 const TOGGLE_BUTTON = document.getElementById('musicToggleBtn');
 let rotationIntervalId = null; 
 
+// Music Manager Object
 const MusicManager = {
+    // Function to play the next theme
     playNextTheme() {
+        // Checks if music is enabled
         if (!isMusicEnabled) return; 
+        // Stops the current music
         this.stopMusic(); 
+        // Updates the theme index
         currentThemeIndex = (currentThemeIndex + 1) % themes.length;
         const nextThemeId = themes[currentThemeIndex] + "-theme";
         currentAudio = document.getElementById(nextThemeId);
         
+        // Plays the current audio
         if (currentAudio) {
             currentAudio.volume = 0.5; 
             currentAudio.play().catch(error => console.error("Music playback failed:", error));
         }
     },
-    
+    // Function to stop the music
     stopMusic() {
         if (currentAudio) {
             currentAudio.pause();
             currentAudio.currentTime = 0; 
         }
     },
-
+    // Function to start the rotation
     startRotation() {
         if (rotationIntervalId) {
             clearInterval(rotationIntervalId);
@@ -964,14 +1070,14 @@ const MusicManager = {
         this.playNextTheme();
         rotationIntervalId = setInterval(() => this.playNextTheme(), 60000); 
     },
-    
+    // Function to stop the rotation
     stopRotation() {
         if (rotationIntervalId) {
             clearInterval(rotationIntervalId);
             rotationIntervalId = null;
         }
     },
-
+    // Function to toggle music on/off
     toggleMusic() {
         isMusicEnabled = !isMusicEnabled;
         
@@ -985,7 +1091,7 @@ const MusicManager = {
         }
     }
 };
-
+// Event listener for the music toggle button
 TOGGLE_BUTTON.addEventListener('click', () => {
     MusicManager.toggleMusic();
 });
@@ -994,8 +1100,9 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 /* -------------------------------------
   START GAME FUNCTION (UNCHANGED)
 ------------------------------------- */
-
+// Function to start the game
 function startGame() {
+  // Initializes the game state
   generateDeck();
   playerHand = [];
   computerHand = [];
@@ -1005,22 +1112,23 @@ function startGame() {
   snowballActive = false;
   presentActive = false;
   pendingPlayIndex = -1; 
-
+  // Deals 7 cards to each player
   for (let i = 0; i < 7; i++) {
     drawCard(playerHand);
     drawCard(computerHand);
   }
-
+  // Sets the initial top card
   topCard = deck.pop();
   while (topCard && topCard.isWild) {
       topCard = deck.pop();
   }
-  
+  // Sets the current color to the top card color
   if (topCard) {
       currentColor = topCard.color; 
   }
-
+  // Calls the  render function
   render();
+  // Sets the starting message
   setMessage("Game started! Your turn.");
 }
 

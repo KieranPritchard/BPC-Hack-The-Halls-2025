@@ -11,8 +11,9 @@
   <script src="main.js"></script>
 </head>
 
+<!-- Main menu of the uno game -->
 <body class="flex items-center justify-center h-screen overflow-hidden">
-
+  <!-- The snowflakes the fall in the background, icons from font awesome-->
   <div class="snowflake"><i class="fas fa-snowflake"></i></div>
   <div class="snowflake"><i class="fas fa-snowflake"></i></div>
   <div class="snowflake"><i class="fas fa-snowflake"></i></div>
@@ -20,38 +21,49 @@
   <div class="snowflake"><i class="fas fa-snowflake"></i></div>
   <div class="snowflake"><i class="fas fa-snowflake"></i></div>
   
+  <!-- Main menu theme on autoplay loop -->
   <audio autoplay loop>
+    <!-- Soundtrack from sound track folder -->
     <source src="./soundtrack/MENUTHEME.mp3" type="audio/mpeg">
+    <!-- Error message -->
     Your browser does not support the audio element.
   </audio>
-
+  
+  <!-- Main divider with animations -->
   <div class="relative z-10 text-center animate__animated animate__zoomIn christmas-container p-10 rounded-2xl">
     
+    <!-- Main logo for our uno game -->
     <h1 class="text-7xl font-extrabold mb-12 christmas-logo">
       <span class="text-red-400">U</span>
       <span class="text-white">N</span>
       <span class="text-green-400">O</span>
     </h1>
 
+    <!-- Menu buttons -->
     <div class="space-y-5">
+      <!-- Link to main game -->
       <a href="game.html"
         class="block christmas-btn px-12 py-5 rounded-xl text-3xl font-extrabold text-white shadow-2xl transition transform hover:scale-105">
+        <!-- gift icon -->
         <i class="fas fa-gift mr-3"></i> Unwrap & Play
       </a>
 
+      <!-- Button to open instructions -->
       <button onclick="openInstructions()"
         class="block christmas-btn px-12 py-5 rounded-xl text-3xl font-extrabold text-white shadow-2xl transition transform hover:scale-105">
+        <!-- Tree icon -->
         <i class="fas fa-tree mr-3"></i> Holiday Rules
       </button>
     </div>
-
   </div>
 
+  <!-- Modal which includes instructions for the game -->
   <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-70 items-center justify-center z-20 animate__animated animate__fadeIn">
     <div class="christmas-container p-10 rounded-xl shadow-2xl max-w-lg text-white text-center">
-
+      <!-- Modal header -->
       <h2 class="text-4xl font-bold mb-4 text-yellow-300">🎄 How to Play (Festive Edition)</h2>
 
+      <!-- Modal text body -->
       <p class="text-xl mb-8 text-gray-200">
         Match cards by <span class="text-green-400">color</span> (like a Christmas Wreath) or <span class="text-red-400">number</span> (like the days 'til Santa).
         <br><br>
@@ -60,6 +72,7 @@
         First player to empty their stocking (play all cards) wins the holiday cheer!
       </p>
 
+      <!-- Close button -->
       <button onclick="closeInstructions()"
         class="mt-4 bg-yellow-400 hover:bg-yellow-300 px-8 py-3 rounded-lg font-bold text-gray-900 text-xl shadow-md">
         Close the Sleigh

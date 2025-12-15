@@ -541,29 +541,39 @@ function applyPlusFourEffect(targetHand, targetName) {
     
     // Checks if the user is the target
     if (targetName === "You") {
-        // Sets the timeout to 
+        // Sets the timeout to 10 seconds
         setTimeout(computerTurn, 1000); 
     } else {
+        // Sets the timeout to 10 seconds
         setTimeout(() => {
+            // Sets the message
             setMessage("Your turn now!");
         }, 1000); 
     }
 }
 
+// Function to apply skip effect
 function applySkipEffect(targetName) {
+    // Checks if the game is over
     if (gameOver) return;
 
+    // Checks if the skip is active
     skipActive = false;
     
+    // Checks if the snowball effect and target is the computer
     if (snowballActive && targetName === "Computer") {
+        // sets the snowball to not active
         snowballActive = false;
+        // Sets the message
         setMessage(`Snowball effect cleared! ⏩ ${targetName}'s turn is skipped!`);
     } else {
+        // Sets the message
         setMessage(`⏩ ${targetName}'s turn is skipped!`);
     }
     
+    // Calls the render function
     render();
-    
+     
     if (targetName === "You") {
         setTimeout(computerTurn, 1000); 
     } else {

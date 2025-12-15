@@ -390,105 +390,158 @@ function render() {
 
   // Player Hand
   const handDiv = document.getElementById("playerHand");
+  // Makes the player hand empty
   handDiv.innerHTML = "";
   
+  // Checks if the present is active and the game is not over
   const isGifting = presentActive && !gameOver;
 
+  // Loops through the player hand
   playerHand.forEach((card, index) => {
+    // Creates a new image
     const img = document.createElement("img");
+    // Sets the image source to the correct path with the function
     img.src = getCardImagePath(card, true); 
+    // Adds the class name for the image
     img.className = "card-img";
     
+    // Checks if the player is gifting a card
     if (isGifting) {
+        // Sets the onclick value to the card you select
         img.onclick = () => selectCardToGift(index);
         img.style.border = "4px solid #ffcc00"; // Gold highlight for gifting
+    // Checks if the game is not over and there is a card pending
     } else if (!gameOver && pendingPlayIndex === -1) {
-        img.onclick = () => playCard(index);
+      // Sets play card to index  
+      img.onclick = () => playCard(index);
     }
-    
+    // Sets the alt text for the card
     img.alt = `${card.color} ${card.value}`; 
+    // Adds the card to the hand
     handDiv.appendChild(img);
   });
   
+  // Gets the draw button by id and diasbles it while gifting is true
   document.getElementById("drawBtn").disabled = isGifting;
 
   // Computer Hand 
   const compDiv = document.getElementById("computerHand");
+  // sets the computer hand to empty
   compDiv.innerHTML = "";
   
+  // Checks if the snowball is active
   if (snowballActive) {
+      // Sets a placeholder element as a div
       const placeholder = document.createElement("div");
+      // Sets the tailwind class names
       placeholder.className = "text-2xl font-bold text-yellow-400 p-4 border border-yellow-400 rounded christmas-container";
+      // Sets the inner text
       placeholder.innerText = "❄️ Computer's cards are hidden by the Snowball!";
+      // Addss the placeholder to their hand
       compDiv.appendChild(placeholder);
   } else {
+      // Loops over the computer hand
       computerHand.forEach(() => {
+        // creates a image element
         const img = document.createElement("img");
+        // sets the image background path
         img.src = CARD_BACK_IMAGE_PATH; 
+        // Applies the class name to it
         img.className = "card-img";
+        // Sets the alt text
         img.alt = "Card Back";
+        // Adds the image to the computers hand
         compDiv.appendChild(img);
       });
   }
 }
 
-/* Check if card playable (UNCHANGED) */
+// Check if card playable
 function canPlay(card) {
-    if (card.isWild) {
+  // Checks if the card is wild  
+  if (card.isWild) {
+        // Returns true
         return true; 
     }
+    // Checks if the top colour is effective
     const effectiveTopColor = topCard.isWild && currentColor ? currentColor : topCard.color;
 
+    // Returns the result
     return card.color === effectiveTopColor || card.value === topCard.value;
 }
 
-/* Action Card Logic Helpers (UNCHANGED) */
+// Action Card Logic Helpers
 
+// Function to apply the plus two card
 function applyPlusTwoEffect(targetHand, targetName) {
+    // Checks if the game is over
     if (gameOver) return;
-
+    
+    // Draws the cards
     drawCard(targetHand);
     drawCard(targetHand);
     
+    // Sets the plus to effect to th false
     plusTwoActive = false;
     
+    // Checks if the snowball effect is active and the target code
     if (snowballActive && targetName === "Computer") {
+        // Sets the snowball active to false
         snowballActive = false;
+        // Sets a message
         setMessage(`Snowball effect cleared! 💀 ${targetName} draws 2 cards and skips turn!`);
     } else {
+        // Sets the message
         setMessage(`💀 ${targetName} draws 2 cards and skips turn!`);
     }
     
+    // calls the render function
     render();
     
+    // Checks if the target is the user
     if (targetName === "You") {
+        // Sets the computers time out to ten seconds
         setTimeout(computerTurn, 1000); 
     } else {
+        // Sets time out to 10 seconds
         setTimeout(() => {
+            // Sets the players message
             setMessage("Your turn now!");
         }, 1000); 
     }
 }
 
+// Applies the plus four effect to the target in the parameters
 function applyPlusFourEffect(targetHand, targetName) {
+    // Checks if the game is over
     if (gameOver) return;
 
+    // Loops over a range of four to draw four cards
     for (let i = 0; i < 4; i++) {
+        // Calls the draw card function
         drawCard(targetHand);
     }
     
+    // sets plus to not active
     plusTwoActive = false; 
     
+    // Checks if the snowball effect is active and the target is the computer
     if (snowballActive && targetName === "Computer") {
+        // Sets the snowball to false
         snowballActive = false;
+        // sets the message
         setMessage(`Snowball effect cleared! 💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
     } else {
+        // sets the message
         setMessage(`💀 ${targetName} draws 4 cards and skips turn! New Color: ${currentColor.toUpperCase()}`);
     }
     
+    // Calls the renderimg function
     render();
     
+    // Checks if the user is the target
     if (targetName === "You") {
+        // Sets the timeout to 
         setTimeout(computerTurn, 1000); 
     } else {
         setTimeout(() => {

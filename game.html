@@ -201,97 +201,146 @@ let currentColor = null;
 
 // function that plays the start sound
 function playStartSound() { 
+    // Gets the audio element of the start sound
     document.getElementById("start-sound").play().catch(e => console.error("Start sound failed:", e)); 
 }
+// function that plays the play card sound
 function playCardSound() { 
+    // Gets the audio element of the play card sound
     document.getElementById("play-card-sound").play().catch(e => console.error("Play card sound failed:", e)); 
 }
+// function that plays the draw card sound
 function playDrawSound() { 
+    // Gets the audio element of the draw card sound
     document.getElementById("draw-card-sound").play().catch(e => console.error("Draw card failed:", e)); 
 }
+// function that plays the plus two card sound
 function playPlusTwoSound() { 
+    // Gets the audio element of the plus two card sound
     document.getElementById("plus-two-sound").play().catch(e => console.error("Plus two sound failed:", e)); 
 }
+// function that plays the wild card sound
 function playWildSound() { 
+    // Gets the audio element of the wild card sound
     document.getElementById("wild-sound").play().catch(e => console.error("Wild sound failed:", e)); 
 }
+// function that plays the win sound
 function playWinSound() { 
+    // Gets the audio element of the win sound
     document.getElementById("win-sound").play().catch(e => console.error("Win sound failed:", e)); 
 }
+// function that plays the loose sound
 function playLoseSound() { 
+    // Gets the audio element of the lose sound
     document.getElementById("lose-sound").play().catch(e => console.error("Lose sound failed:", e)); 
 }
 
 
 /* -------------------------------------
-  1. Generate Deck (UNCHANGED)
+  Generate Deck Function
 ------------------------------------- */
 
 function generateDeck() {
+  // Stores the deck of cards which will be generated
   deck = [];
   
+  // Loops through each of the colours in the colours list
   COLORS.forEach(color => {
+    // Loops through the number values
     NUMBER_VALUES.forEach(value => {
+      // gets the filename from the colour and the value in the current iteration
       const fileName = `${color}_${value}.png`;
+      // Uses the filename variable to get the image path
       const imagePath = `cards/${fileName}`;
+      // Stores the card as a dictionary
       const card = { color, value: value.toString(), image: imagePath, type: 'number' };
+      // Adds the card to the deck
       deck.push(card); 
+      // Checks if the card value is not zero
       if (value !== 0) {
+        // Pushs the card to the deck
         deck.push(card); 
       }
     });
 
+    // Loops over the action values and filters out the non wild card values
     ACTION_VALUES.filter(v => !WILD_VALUES.includes(v)).forEach(value => {
+      // gets the filename from the colour and the value in the current iteration
       const fileName = `${color}_${value}.png`;
+      // Uses the filename variable to get the image path
       const imagePath = `cards/${fileName}`;
+      // Stores the card as a dictionary
       const card = { color, value, image: imagePath, type: 'action' };
+      // Pushes the cards to the deck
       deck.push(card); 
       deck.push(card); 
     });
   });
 
+  // Loops over the wild values
   WILD_VALUES.forEach(value => {
-      let fileName = "";
+    // initalises the file name as an empty array  
+    let fileName = "";
+      // Checks if the value is 'wild'
       if (value === "wild") {
+          // Sets the file name to wildcard_1.png
           fileName = "wildcard_1.png";
+      // Checks if the value is +4
       } else if (value === "+4") {
+          // sets the file name to the plus four file name
           fileName = "card_+4_1.png";
+      // Checks if the value is the snow ball value
       } else if (value === SNOWBALL_VALUE) {
+          // Sets the file path to be the snowball card path
           fileName = "snowball_card_1.png"; 
+      // Checks if the card is the present value
       } else if (value === PRESENT_VALUE) {
-          fileName = "present_card_1.png";
+        // Sets the file name to the present card path  
+        fileName = "present_card_1.png";
       }
       
+      // Sets the image path
       const imagePath = `cards/${fileName}`;
+      // Sets the wild card infomation as a dictionary
       const card = { color: 'black', value, image: imagePath, type: 'wild' }; 
       
+      // Loops through and pushes the cards
       for(let i = 0; i < 4; i++) {
           deck.push({...card, isWild: true}); 
       }
   });
   
+  // Randomises the deck
   deck = deck.sort(() => Math.random() - 0.5);
 }
 
 /* -------------------------------------
-  2. Image Rendering Function (UNCHANGED)
+  2. Image Rendering Function
 ------------------------------------- */
-
+// Gets the image card
 function getCardImagePath(card, isFaceUp = true) {
+  // Checks if the card is face up
   if (isFaceUp && card) {
+    // returns the cards image
     return card.image;
   } else {
+    // Returns the cards back image
     return CARD_BACK_IMAGE_PATH;
   }
 }
 
-/* Draw card (UNCHANGED) */
+/* Draw card */
 function drawCard(hand) {
+  // Checks if the card length is zero and genrates the deck
   if (deck.length === 0) {
+    // calls the generate deck function
     generateDeck(); 
   }
+  // gets the drawncard from the last item in the deck
   const drawnCard = deck.pop();
+  // Checks the drawn card
   if (drawnCard) {
+      // Adds the drawn card to the hand
       hand.push(drawnCard);
   }
 }

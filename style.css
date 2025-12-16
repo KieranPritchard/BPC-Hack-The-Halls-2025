@@ -33,6 +33,9 @@ body {
 .snowflake:nth-child(4) { animation-duration: 10s; left: 50%; font-size: 20px; animation-delay: 6s; }
 .snowflake:nth-child(5) { animation-duration: 13s; left: 65%; font-size: 40px; animation-delay: 8s; }
 .snowflake:nth-child(6) { animation-duration: 8s; left: 80%; font-size: 28px; animation-delay: 1s; }
+/* New snowflakes added below */
+.snowflake:nth-child(7) { animation-duration: 11s; left: 5%; font-size: 22px; animation-delay: 3s; }
+.snowflake:nth-child(8) { animation-duration: 14s; left: 90%; font-size: 32px; animation-delay: 7s; }
 
 .christmas-container {
     /* Forest Green background with a subtle gold border/shadow */

@@ -36,9 +36,7 @@ To play, open `index.html` in your browser. For best results, use a local server
 - **Reverse:** Reverses play order. In 2-player games, acts as a skip.
 - **Draw Two:** Next player draws 2 cards and misses a turn.
 - **Wild Card:** Change the current colour.
-- **Wild Draw +4:** Change the colour and make the next player draw 4 cards. The next player may challenge:
-  - If the challenge succeeds, you draw 4 cards.
-  - If the challenge fails, they draw 6 cards.
+- **Wild Draw +4:** Change the colour and make the next player draw 4 cards.
 
 ### Special Holiday Action Cards
 - **Snowball Card:** The next player has some cards hidden and cannot see what they are.
@@ -48,7 +46,7 @@ To play, open `index.html` in your browser. For best results, use a local server
 
 ## Features
 - Play against a computer
-- Festive sounds and music (see SFX/ and soundtrack/)
+- Sounds and music (see `SFX/` and `soundtrack/`)
 - Special holiday action cards
 
 ---
@@ -57,12 +55,7 @@ To play, open `index.html` in your browser. For best results, use a local server
 1. Each player is dealt 7 cards.
 2. Match cards by colour, number, or symbol.
 3. Play action cards to gain an advantage.
-4. Call "UNO!" when you have one card left.
-5. First player to discard all cards wins!
-
-**Rules:**
-- If you forget to call **UNO!** and get caught, draw 2 cards.
-- If you play a Wild Draw +4, the next player can challenge if they think you could have played a standard card. If the challenge succeeds, you draw 4 cards. If not, they draw 6 cards.
+4. First player to discard all cards wins!
 
 ---
 
@@ -75,7 +68,7 @@ To play, open `index.html` in your browser. For best results, use a local server
 
 ## Installation & Running
 1. Clone or download this repository.
-2. Open `index.html` in your browser.
+2. Find and open `index.html` in your browser.
 3. Enjoy the game!
 
 ---

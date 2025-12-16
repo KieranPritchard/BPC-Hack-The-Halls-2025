@@ -29,6 +29,58 @@ function closeInstructions() {
 /* ------------------------------------
       UNO GAME LOGIC
 ------------------------------------- */
+// --- Cooldown setup ---
+let actionCooldown = false;
+const COOLDOWN_TIME = 1000; // milliseconds
+
+// --- Player places a card ---
+function playerPlaceCard(cardIndex) {
+    if (actionCooldown) return; // ignore spamming
+
+    const card = playerHand[cardIndex];
+
+    // Check if the card can be played (your existing logic)
+    if (!canPlayCard(card)) return;
+
+    // Place the card on the pile
+    placeCard(cardIndex);
+
+    // Play sound if needed
+    if (card.type === "PLUS2") {
+        playSound("PLUS2.mp3");
+    } else if (card.type === "PLUS4") {
+        playSound("PLUS4.mp3");
+    }
+
+    // Activate cooldown
+    activateCooldown();
+}
+
+// --- Player draws a card ---
+function playerDrawCard() {
+    if (actionCooldown) return; // ignore spamming
+
+    drawCard(); // your existing draw logic
+
+    // Activate cooldown
+    activateCooldown();
+}
+
+// --- Cooldown helper function ---
+function activateCooldown() {
+    actionCooldown = true;
+    updateUI(); // optional: disable buttons or show feedback
+    setTimeout(() => {
+        actionCooldown = false;
+        updateUI(); // re-enable buttons
+    }, COOLDOWN_TIME);
+}
+
+// --- Optional UI feedback ---
+function updateUI() {
+    const buttons = document.querySelectorAll('.card-button, #drawButton');
+    buttons.forEach(btn => btn.disabled = actionCooldown);
+}
 
 // Defines the core types of cards
 const COLORS = ["red", "green", "blue", "yellow"]; // Stores the colours used in the program
@@ -89,6 +141,11 @@ function playDrawSound() {
 function playPlusTwoSound() { 
     // Gets the audio element of the plus two card sound
     document.getElementById("plus-two-sound").play().catch(e => console.error("Plus two sound failed:", e)); 
+}
+// function that plays the plus four card sound
+function playPlusFourSound() { 
+    // Gets the audio element of the plus four card sound
+    document.getElementById("plus-four-sound").play().catch(e => console.error("Plus four sound failed:", e)); 
 }
 // function that plays the wild card sound
 function playWildSound() { 
@@ -593,7 +650,7 @@ window.handleColorSelect = function(selectedColor) {
 
     if (card.value === "+4") {
         // Plays the plus four sound
-        playPlusTwoSound(); 
+        playPlusFourSound(); 
         // Updates the message text
         messageText = `You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`;
         setMessage(messageText);
@@ -808,7 +865,7 @@ function computerTurn() {
             if (checkWinner()) return;
             // Handles +4 effect
             if (playable.value === "+4") {
-                playPlusTwoSound(); 
+                playPlusFourSound(); 
                 setTimeout(() => {
                   // Applies the plus four effect to the player
                     applyPlusFourEffect(playerHand, "You");
@@ -1078,100 +1135,127 @@ function showPlayerTurnMessage() {
 // --- Render Function for 2-Player ---
 
 function render2P() {
-    // Render Top Card (Same logic as render())
+    /* ---------- TOP CARD ---------- */
     const top = document.getElementById("topCard");
     top.innerHTML = "";
+
     if (topCard) {
         const topImg = document.createElement("img");
         topImg.src = getCardImagePath(topCard, true);
         topImg.className = "card-img";
-        const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+
+        const displayColor =
+            topCard.isWild && currentColor ? currentColor : topCard.color;
+
         topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
 
         if (topCard.isWild && currentColor) {
-            let borderColor = 'white';
-            if (currentColor === 'red') borderColor = '#cc0000';
-            if (currentColor === 'green') borderColor = '#006600';
-            if (currentColor === 'yellow') borderColor = '#ffcc00';
-            if (currentColor === 'blue') borderColor = '#004c99';
+            let borderColor = "white";
+            if (currentColor === "red") borderColor = "#cc0000";
+            if (currentColor === "green") borderColor = "#006600";
+            if (currentColor === "yellow") borderColor = "#ffcc00";
+            if (currentColor === "blue") borderColor = "#004c99";
             topImg.style.border = `4px solid ${borderColor}`;
         } else {
-            topImg.style.border = 'none';
+            topImg.style.border = "none";
         }
+
         top.appendChild(topImg);
     }
 
-    // --- Player 1 Hand ---
+    /* ---------- TURN FLAGS ---------- */
+    const isP1Turn = currentPlayer === 1;
+    const isP2Turn = currentPlayer === 2;
+
+    /* ---------- PLAYER 1 HAND ---------- */
     const p1Div = document.getElementById("player1Hand");
     p1Div.innerHTML = "";
-    const isP1Turn = currentPlayer === 1;
-    const isP1Gifting = isP1Turn && p2_presentActive && !p2_gameOver;
 
     player1Hand.forEach((card, index) => {
         const img = document.createElement("img");
-        img.src = getCardImagePath(card, true); 
+
+        // Card BACK if not Player 1's turn
+        img.src = isP1Turn
+            ? card.image
+            : CARD_BACK_IMAGE_PATH;
+
         img.className = "card-img";
-        
-        if (isP1Gifting) {
-            img.onclick = () => selectCardToGift2P(index, 1);
-            img.style.border = "4px solid #cc0000"; // Red highlight for gifting
-        } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP1Turn) {
+        img.alt = isP1Turn ? `${card.color} ${card.value}` : "Card Back";
+
+        // Click only if it's Player 1's turn
+        if (
+            isP1Turn &&
+            !p2_gameOver &&
+            p2_pendingPlayIndex === -1 &&
+            !p2_presentActive
+        ) {
             img.onclick = () => playCard2P(index);
         }
-        img.alt = `${card.color} ${card.value}`; 
+
+        // Present gifting highlight
+        if (isP1Turn && p2_presentActive) {
+            img.style.border = "4px solid #cc0000";
+            img.onclick = () => selectCardToGift2P(index, 1);
+        }
+
         p1Div.appendChild(img);
     });
 
-    // --- Player 2 Hand ---
+    /* ---------- PLAYER 2 HAND ---------- */
     const p2Div = document.getElementById("player2Hand");
     p2Div.innerHTML = "";
-    const isP2Turn = currentPlayer === 2;
-    const isP2Gifting = isP2Turn && p2_presentActive && !p2_gameOver;
 
+    // Snowball: hide Player 2 cards when Player 1 is active
     if (p2_snowballActive && isP1Turn) {
-        // Player 2's cards are hidden by Snowball (if P1 played it)
         const placeholder = document.createElement("div");
-        placeholder.className = "text-xl font-bold text-yellow-400 p-4 border border-yellow-400 rounded christmas-container";
-        placeholder.innerText = "❄️ Player 2's cards are hidden by the Snowball!";
+        placeholder.className =
+            "text-xl font-bold text-yellow-400 p-4 border border-yellow-400 rounded christmas-container";
+        placeholder.innerText =
+            "❄️ Player 2's cards are hidden by the Snowball!";
         p2Div.appendChild(placeholder);
-    } else if (p2_snowballActive && isP2Turn) {
-        // Player 2 played Snowball, so P1's hand should be hidden, not P2's. Render P2's hand normally.
-        player2Hand.forEach((card, index) => {
-            const img = document.createElement("img");
-            img.src = getCardImagePath(card, true); 
-            img.className = "card-img";
-
-            if (isP2Gifting) {
-                img.onclick = () => selectCardToGift2P(index, 2);
-                img.style.border = "4px solid #006600"; // Green highlight for gifting
-            } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP2Turn) {
-                img.onclick = () => playCard2P(index);
-            }
-            img.alt = `${card.color} ${card.value}`;
-            p2Div.appendChild(img);
-        });
     } else {
-        // Normal rendering of Player 2's hand
         player2Hand.forEach((card, index) => {
             const img = document.createElement("img");
-            img.src = getCardImagePath(card, true); 
-            img.className = "card-img";
 
-            if (isP2Gifting) {
-                img.onclick = () => selectCardToGift2P(index, 2);
-                img.style.border = "4px solid #006600"; // Green highlight for gifting
-            } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP2Turn) {
+            // Card BACK if not Player 2's turn
+            img.src = isP2Turn
+                ? card.image
+                : CARD_BACK_IMAGE_PATH;
+
+            img.className = "card-img";
+            img.alt = isP2Turn ? `${card.color} ${card.value}` : "Card Back";
+
+            // Click only if it's Player 2's turn
+            if (
+                isP2Turn &&
+                !p2_gameOver &&
+                p2_pendingPlayIndex === -1 &&
+                !p2_presentActive
+            ) {
                 img.onclick = () => playCard2P(index);
             }
-            img.alt = `${card.color} ${card.value}`;
+
+            // Present gifting highlight
+            if (isP2Turn && p2_presentActive) {
+                img.style.border = "4px solid #006600";
+                img.onclick = () => selectCardToGift2P(index, 2);
+            }
+
             p2Div.appendChild(img);
         });
     }
 
-    // Update Player Statuses
-    document.getElementById("p1_hand_label").innerText = `Player 1's Hand (${player1Hand.length} cards)`;
-    document.getElementById("p2_hand_label").innerText = `Player 2's Stocking (${player2Hand.length} cards)`;
-    document.getElementById("drawBtn").disabled = p2_gameOver || p2_presentActive || p2_pendingPlayIndex !== -1;
+    /* ---------- UI UPDATES ---------- */
+    document.getElementById(
+        "p1_hand_label"
+    ).innerText = `Player 1's Hand (${player1Hand.length} cards)`;
+
+    document.getElementById(
+        "p2_hand_label"
+    ).innerText = `Player 2's Stocking (${player2Hand.length} cards)`;
+
+    document.getElementById("drawBtn").disabled =
+        p2_gameOver || p2_presentActive || p2_pendingPlayIndex !== -1;
 }
 
 // --- Game Logic for 2-Player ---
@@ -1199,7 +1283,7 @@ function applyActionEffect2P(cardValue) {
 
     if (cardValue === "+2" || isPlusFour) {
         const drawAmount = isPlusFour ? 4 : 2;
-        playPlusTwoSound(); 
+        playPlusFourSound(); 
 
         for (let i = 0; i < drawAmount; i++) {
             drawCard(targetHand);

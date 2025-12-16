@@ -87,6 +87,7 @@ body {
 #playAgainBtn:hover {
     transform: scale(1.05);
 }
+
 /* Style for the color selection popup */
 #colorSelector {
     /* Make the selector look like a Christmas wreath or gift box */
@@ -99,6 +100,11 @@ body {
 }
 .color-option {
     /* Color options as ornaments */
+    /* *** ADDED STYLES FOR CIRCLE *** */
+    width: 30px; /* Adjust size as needed */
+    height: 30px; /* Must match width for a circle */
+    border-radius: 50%; /* Makes the element a circle */
+    /* ***************************** */
     border: 4px solid transparent;
     transition: border-color 0.1s, transform 0.1s;
 }

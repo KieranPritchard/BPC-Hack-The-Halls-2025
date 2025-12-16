@@ -45,14 +45,14 @@ const CARD_BACK_IMAGE_PATH = "cards/card_back.png"; // Gets the card back image
 
 // Stores the current deck
 let deck = [];
-// Stores the player hand
+// Stores the player hand (Single Player Mode)
 let playerHand = [];
-// Stores the computer hand
+// Stores the computer hand (Single Player Mode)
 let computerHand = [];
 // stores the current top card
 let topCard = null;
 
-// --- STATE VARIABLES ---
+// --- STATE VARIABLES (Single Player Mode) ---
 
 // Flags for if the special cards are active
 let plusTwoActive = false; 
@@ -217,7 +217,7 @@ function drawCard(hand) {
 }
 
 /* -------------------------------------
-  3. Render Function
+  3. Render Function (Single Player Mode)
 ------------------------------------- */
 
 function render() {
@@ -341,7 +341,7 @@ function canPlay(card) {
     return card.color === effectiveTopColor || card.value === topCard.value;
 }
 
-// Action Card Logic Helpers
+// Action Card Logic Helpers (Single Player Mode)
 
 // Function to apply the plus two card
 function applyPlusTwoEffect(targetHand, targetName) {
@@ -562,6 +562,13 @@ function hideColorSelector() {
 }
 
 window.handleColorSelect = function(selectedColor) {
+    // Checks if we are in 2-Player mode
+    if (document.getElementById("player1Hand") && !document.getElementById("playerHand")) {
+        handleColorSelect2P(selectedColor);
+        return;
+    }
+
+    // --- Single Player Logic ---
     // Checks if there is a pending play index
     if (pendingPlayIndex === -1) return;
     
@@ -617,7 +624,6 @@ window.handleColorSelect = function(selectedColor) {
         // Sets the message
         setMessage(messageText);
         render();
-        // *** FIX 2: Removed the 'return;' here to prevent softlock ***
         // The game will now proceed to the turn advancement logic below
     }
 
@@ -639,6 +645,13 @@ window.handleColorSelect = function(selectedColor) {
 
 /* Player draws (UNCHANGED) */
 document.getElementById("drawBtn").onclick = () => {
+  // Check if we are in 2-Player mode
+    if (document.getElementById("player1Hand") && !document.getElementById("playerHand")) {
+        drawCard2P();
+        return;
+    }
+
+    // --- Single Player Logic ---
   // Checks if the game is over or present is active
   if (gameOver || presentActive) return; 
   // Checks if plus two is active
@@ -980,7 +993,7 @@ TOGGLE_BUTTON.addEventListener('click', () => {
 
 
 /* -------------------------------------
-  START GAME FUNCTION (UNCHANGED)
+  START GAME FUNCTION (Single Player Mode)
 ------------------------------------- */
 // Function to start the game
 function startGame() {
@@ -1014,12 +1027,405 @@ function startGame() {
   setMessage("Game started! Your turn.");
 }
 
+
 /* -------------------------------------
-  INITIALIZATION (FIXED)
+  2-PLAYER GAME LOGIC (NEW CODE)
+------------------------------------- */
+
+// --- 2-Player State Variables ---
+let player1Hand = [];
+let player2Hand = [];
+let currentPlayer = 1; // 1 or 2
+let p2_plusTwoActive = false; 
+let p2_skipActive = false;
+let p2_snowballActive = false;
+let p2_presentActive = false;
+let p2_gameOver = false;
+let p2_pendingPlayIndex = -1; // -1: no pending, index: index of card played
+
+// --- Message/Status Helpers for 2-Player ---
+
+function getTargetHand(player) {
+    return player === 1 ? player1Hand : player2Hand;
+}
+
+function getCurrentHand() {
+    return currentPlayer === 1 ? player1Hand : player2Hand;
+}
+
+function getNextPlayer() {
+    return currentPlayer === 1 ? 2 : 1;
+}
+
+function getCurrentPlayerName() {
+    return `Player ${currentPlayer}`;
+}
+
+function getNextPlayerName() {
+    return `Player ${getNextPlayer()}`;
+}
+
+function setStatusMessage(msg) {
+    document.getElementById("message").innerText = msg;
+    const playerStatus = document.getElementById("playerStatus");
+    playerStatus.innerText = `${getCurrentPlayerName()}'s Turn!`;
+}
+
+function showPlayerTurnMessage() {
+    setStatusMessage(`${getCurrentPlayerName()}'s turn.`);
+}
+
+// --- Render Function for 2-Player ---
+
+function render2P() {
+    // Render Top Card (Same logic as render())
+    const top = document.getElementById("topCard");
+    top.innerHTML = "";
+    if (topCard) {
+        const topImg = document.createElement("img");
+        topImg.src = getCardImagePath(topCard, true);
+        topImg.className = "card-img";
+        const displayColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+        topImg.alt = `Top Card: ${displayColor} ${topCard.value}`;
+
+        if (topCard.isWild && currentColor) {
+            let borderColor = 'white';
+            if (currentColor === 'red') borderColor = '#cc0000';
+            if (currentColor === 'green') borderColor = '#006600';
+            if (currentColor === 'yellow') borderColor = '#ffcc00';
+            if (currentColor === 'blue') borderColor = '#004c99';
+            topImg.style.border = `4px solid ${borderColor}`;
+        } else {
+            topImg.style.border = 'none';
+        }
+        top.appendChild(topImg);
+    }
+
+    // --- Player 1 Hand ---
+    const p1Div = document.getElementById("player1Hand");
+    p1Div.innerHTML = "";
+    const isP1Turn = currentPlayer === 1;
+    const isP1Gifting = isP1Turn && p2_presentActive && !p2_gameOver;
+
+    player1Hand.forEach((card, index) => {
+        const img = document.createElement("img");
+        img.src = getCardImagePath(card, true); 
+        img.className = "card-img";
+        
+        if (isP1Gifting) {
+            img.onclick = () => selectCardToGift2P(index, 1);
+            img.style.border = "4px solid #cc0000"; // Red highlight for gifting
+        } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP1Turn) {
+            img.onclick = () => playCard2P(index);
+        }
+        img.alt = `${card.color} ${card.value}`; 
+        p1Div.appendChild(img);
+    });
+
+    // --- Player 2 Hand ---
+    const p2Div = document.getElementById("player2Hand");
+    p2Div.innerHTML = "";
+    const isP2Turn = currentPlayer === 2;
+    const isP2Gifting = isP2Turn && p2_presentActive && !p2_gameOver;
+
+    if (p2_snowballActive && isP1Turn) {
+        // Player 2's cards are hidden by Snowball (if P1 played it)
+        const placeholder = document.createElement("div");
+        placeholder.className = "text-xl font-bold text-yellow-400 p-4 border border-yellow-400 rounded christmas-container";
+        placeholder.innerText = "❄️ Player 2's cards are hidden by the Snowball!";
+        p2Div.appendChild(placeholder);
+    } else if (p2_snowballActive && isP2Turn) {
+        // Player 2 played Snowball, so P1's hand should be hidden, not P2's. Render P2's hand normally.
+        player2Hand.forEach((card, index) => {
+            const img = document.createElement("img");
+            img.src = getCardImagePath(card, true); 
+            img.className = "card-img";
+
+            if (isP2Gifting) {
+                img.onclick = () => selectCardToGift2P(index, 2);
+                img.style.border = "4px solid #006600"; // Green highlight for gifting
+            } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP2Turn) {
+                img.onclick = () => playCard2P(index);
+            }
+            img.alt = `${card.color} ${card.value}`;
+            p2Div.appendChild(img);
+        });
+    } else {
+        // Normal rendering of Player 2's hand
+        player2Hand.forEach((card, index) => {
+            const img = document.createElement("img");
+            img.src = getCardImagePath(card, true); 
+            img.className = "card-img";
+
+            if (isP2Gifting) {
+                img.onclick = () => selectCardToGift2P(index, 2);
+                img.style.border = "4px solid #006600"; // Green highlight for gifting
+            } else if (!p2_gameOver && p2_pendingPlayIndex === -1 && isP2Turn) {
+                img.onclick = () => playCard2P(index);
+            }
+            img.alt = `${card.color} ${card.value}`;
+            p2Div.appendChild(img);
+        });
+    }
+
+    // Update Player Statuses
+    document.getElementById("p1_hand_label").innerText = `Player 1's Hand (${player1Hand.length} cards)`;
+    document.getElementById("p2_hand_label").innerText = `Player 2's Stocking (${player2Hand.length} cards)`;
+    document.getElementById("drawBtn").disabled = p2_gameOver || p2_presentActive || p2_pendingPlayIndex !== -1;
+}
+
+// --- Game Logic for 2-Player ---
+
+function advanceTurn() {
+    if (p2_gameOver) return;
+
+    currentPlayer = getNextPlayer();
+
+    // Reset single-player active flags
+    p2_plusTwoActive = false;
+    p2_skipActive = false;
+    p2_snowballActive = false;
+    p2_presentActive = false;
+
+    render2P();
+    checkWinner2P();
+    showPlayerTurnMessage();
+}
+
+function applyActionEffect2P(cardValue) {
+    const targetHand = getTargetHand(getNextPlayer());
+    const targetName = getNextPlayerName();
+    const isPlusFour = cardValue === "+4";
+
+    if (cardValue === "+2" || isPlusFour) {
+        const drawAmount = isPlusFour ? 4 : 2;
+        playPlusTwoSound(); 
+
+        for (let i = 0; i < drawAmount; i++) {
+            drawCard(targetHand);
+        }
+
+        p2_plusTwoActive = true; 
+        p2_skipActive = true; // Draw penalty also skips turn
+
+        setStatusMessage(`💀 ${targetName} must draw ${drawAmount} cards and is skipped! New Color: ${currentColor.toUpperCase()}`);
+        
+    } else if (cardValue === "miss") {
+        p2_skipActive = true;
+        setStatusMessage(`⏩ ${targetName}'s turn is skipped!`);
+        
+    } else if (cardValue === SNOWBALL_VALUE) {
+        p2_snowballActive = true;
+        p2_skipActive = true;
+        setStatusMessage(`❄️ ${getCurrentPlayerName()} played a **Snowball**! ${targetName}'s cards are hidden, and their turn is skipped! New Color: ${currentColor.toUpperCase()}`);
+        
+    } else if (cardValue === PRESENT_VALUE) {
+        p2_presentActive = true; 
+        p2_skipActive = true;
+        setStatusMessage(`🎁 ${getCurrentPlayerName()} played a **Present Card**! ${targetName}, choose a card to gift to ${getCurrentPlayerName()}. Turn is skipped! New Color: ${currentColor.toUpperCase()}`);
+        // Render to show gifting UI
+        render2P();
+        return; 
+    }
+    
+    // For all other actions, advance the turn
+    render2P();
+    advanceTurn();
+}
+
+function playCard2P(index) {
+    if (p2_gameOver || p2_pendingPlayIndex !== -1 || p2_presentActive) return;
+
+    const currentHand = getCurrentHand();
+    const card = currentHand[index];
+    
+    if (!canPlay(card)) {
+        setStatusMessage("❌ You can't play that card!");
+        return;
+    }
+
+    if (card.isWild) {
+        p2_pendingPlayIndex = index; 
+        showColorSelector();
+        playCardSound();
+        return; 
+    }
+
+    // Play Card
+    topCard = card;
+    currentColor = card.color; 
+    currentHand.splice(index, 1);
+    
+    playCardSound();
+    
+    render2P();
+    if (checkWinner2P()) return;
+
+    if (card.value === "+2" || card.value === "miss" || card.value === SNOWBALL_VALUE || card.value === PRESENT_VALUE) {
+        applyActionEffect2P(card.value);
+    } else {
+        advanceTurn();
+    }
+}
+
+function selectCardToGift2P(index, giverPlayer) {
+    if (!p2_presentActive || giverPlayer !== currentPlayer) return;
+
+    const currentHand = getCurrentHand();
+    const nextHand = getTargetHand(getNextPlayer());
+    const giftedCard = currentHand[index];
+    
+    currentHand.splice(index, 1);
+    nextHand.push(giftedCard);
+    
+    p2_presentActive = false;
+    
+    setStatusMessage(`🎁 ${getCurrentPlayerName()} gifted a ${giftedCard.color} ${giftedCard.value} to ${getNextPlayerName()}!`);
+
+    render2P();
+    if (checkWinner2P()) return;
+
+    // Turn was skipped by the present card, so advance the turn now.
+    advanceTurn();
+}
+
+window.handleColorSelect2P = function(selectedColor) {
+    if (p2_pendingPlayIndex === -1) return;
+    
+    const currentHand = getCurrentHand();
+    const card = currentHand[p2_pendingPlayIndex];
+    
+    topCard = card;
+    currentColor = selectedColor; 
+    currentHand.splice(p2_pendingPlayIndex, 1);
+    p2_pendingPlayIndex = -1;
+    
+    hideColorSelector();
+    playWildSound();
+    
+    render2P();
+    if (checkWinner2P()) return;
+    
+    // Wild action effects
+    if (card.value === "+4" || card.value === SNOWBALL_VALUE || card.value === PRESENT_VALUE) {
+        applyActionEffect2P(card.value);
+    } else {
+        advanceTurn();
+    }
+};
+
+function drawCard2P() {
+    if (p2_gameOver || p2_presentActive || p2_pendingPlayIndex !== -1) return; 
+
+    const currentHand = getCurrentHand();
+    let drawAmount = 1;
+    let messageText = `${getCurrentPlayerName()} drew a card.`;
+    
+    if (p2_plusTwoActive) {
+        const isPlusFour = topCard && topCard.value === "+4";
+        drawAmount = isPlusFour ? 4 : 2;
+        messageText = `${getCurrentPlayerName()} drew ${drawAmount} cards due to the +${drawAmount} penalty.`;
+        p2_plusTwoActive = false;
+    } 
+
+    for (let i = 0; i < drawAmount; i++) {
+        drawCard(currentHand);
+    }
+    
+    playDrawSound(); 
+    setStatusMessage(messageText);
+    render2P();
+    checkWinner2P();
+    
+    // Draw also ends the turn
+    advanceTurn();
+}
+
+function checkWinner2P() {
+    if (player1Hand.length === 0) {
+        setStatusMessage("🎉 Player 1 wins the Festive Challenge! Play again?");
+        playWinSound(); 
+        disableGame2P();
+        return true;
+    }
+    if (player2Hand.length === 0) {
+        setStatusMessage("🎉 Player 2 wins the Festive Challenge! Play again?");
+        playWinSound(); 
+        disableGame2P();
+        return true;
+    }
+    return false;
+}
+
+function disableGame2P() {
+    p2_gameOver = true;
+    document.getElementById("drawBtn").disabled = true;
+    
+    // Replace both hands with the 'Play Again' button
+    const p1Div = document.getElementById("player1Hand");
+    const p2Div = document.getElementById("player2Hand");
+    p1Div.innerHTML = "";
+    p2Div.innerHTML = "";
+    document.getElementById("playerStatus").innerText = "Game Over!";
+    
+    const button = document.createElement("button");
+    button.id = "playAgainBtn2P";
+    button.className = "christmas-btn px-6 py-3 rounded-xl text-2xl font-bold shadow-xl mt-4";
+    button.innerText = "🎅 Start New Game";
+    button.onclick = () => {
+        playStartSound(); 
+        setTimeout(() => window.location.reload(), 100); 
+    };
+    
+    // Append to the container element around the hands, or just one of the hand elements
+    p1Div.appendChild(button);
+}
+
+// --- Start Game Function for 2-Player ---
+function startGame2P() {
+    generateDeck();
+    player1Hand = [];
+    player2Hand = [];
+    p2_gameOver = false; 
+    p2_plusTwoActive = false;
+    p2_skipActive = false; 
+    p2_snowballActive = false;
+    p2_presentActive = false;
+    p2_pendingPlayIndex = -1; 
+    currentPlayer = 1; // Start with Player 1
+
+    for (let i = 0; i < 7; i++) {
+        drawCard(player1Hand);
+        drawCard(player2Hand);
+    }
+    
+    topCard = deck.pop();
+    while (topCard && topCard.isWild) {
+        topCard = deck.pop();
+    }
+    
+    if (topCard) {
+        currentColor = topCard.color; 
+    }
+
+    render2P();
+    setStatusMessage("Game started! Your turn.");
+    document.getElementById("playerStatus").innerText = "Player 1's Turn!";
+}
+
+
+/* -------------------------------------
+  INITIALIZATION (FIXED/MODIFIED)
 ------------------------------------- */
 
 // Crucial fix: Wait for the entire page to load before starting the game
 document.addEventListener('DOMContentLoaded', () => {
-    startGame();
+    // Check if we are in the 2-Player game page (by checking for a unique element)
+    if (document.getElementById("player1Hand")) {
+        startGame2P();
+    } else {
+        // Assume Single Player mode for original index.html
+        startGame();
+    }
     playStartSound();
 });

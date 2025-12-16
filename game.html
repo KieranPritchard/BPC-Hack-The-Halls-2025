@@ -703,14 +703,18 @@ window.handleColorSelect = function(selectedColor) {
     // Removes the card from the player hand
     playerHand.splice(pendingPlayIndex, 1);
     
+    // *** FIX 1: Reset pendingPlayIndex after card is played ***
+    pendingPlayIndex = -1;
+    // *** END FIX 1 ***
+    
     // Hides the color selector
     hideColorSelector();
-  
+    
     // Displays the message
     let messageText = `You played a Wild and chose ${selectedColor.toUpperCase()}. Computer's turn...`;
 
     if (card.value === "+4") {
-      // Plays the plus four sound
+        // Plays the plus four sound
         playPlusTwoSound(); 
         // Updates the message text
         messageText = `You played a Wild +4! Computer must draw 4! New Color: ${currentColor.toUpperCase()}`;
@@ -728,7 +732,7 @@ window.handleColorSelect = function(selectedColor) {
         // Sets the snowball active to true
         snowballActive = true; 
         // Sets the skip active to true
-        skipActive = true;     
+        skipActive = true;     
         // Updates the message text
         messageText = `❄️ You played a **Snowball**! Computer's cards are hidden, and their turn is skipped! New Color: ${currentColor.toUpperCase()}`;
     // Checks if the card value is present
@@ -742,17 +746,24 @@ window.handleColorSelect = function(selectedColor) {
         // Sets the message
         setMessage(messageText);
         render();
-        return; 
+        // *** FIX 2: Removed the 'return;' here to prevent softlock ***
+        // The game will now proceed to the turn advancement logic below
     }
+
+    // --- Standard Wild Card/Snowball/Present Cleanup and Turn Advance ---
     
-    // Sets the message
+    // Sets the message (for Wild, Snowball, and now Present)
     setMessage(messageText);
+    
+    // Render the updated game state
     render();
+
     // Checks for a winner
     if (checkWinner()) return;
-    // Sets the computer turn timeout to 900 milliseconds
-    setTimeout(computerTurn, 900);
-}
+    
+    // Advance the turn (computerTurn will respect skipActive = true)
+    setTimeout(computerTurn, 1000);
+};
 
 
 /* Player draws (UNCHANGED) */

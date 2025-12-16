@@ -31,7 +31,7 @@ function closeInstructions() {
 ------------------------------------- */
 // --- Cooldown setup ---
 let actionCooldown = false;
-const COOLDOWN_TIME = 1000; // milliseconds
+const COOLDOWN_TIME = 1500; // milliseconds
 
 // --- Player places a card ---
 function playerPlaceCard(cardIndex) {
@@ -68,18 +68,30 @@ function playerDrawCard() {
 
 // --- Cooldown helper function ---
 function activateCooldown() {
-    actionCooldown = true;
-    updateUI(); // optional: disable buttons or show feedback
+    if (actionCooldown) return; // extra safety
+    actionCooldown = true;      // LOCK IMMEDIATELY
+    updateUI();
+
     setTimeout(() => {
         actionCooldown = false;
-        updateUI(); // re-enable buttons
+        updateUI();
     }, COOLDOWN_TIME);
 }
-
+function endPlayerCooldown() {
+    actionCooldown = false;
+    updateUI();
+}
 // --- Optional UI feedback ---
 function updateUI() {
-    const buttons = document.querySelectorAll('.card-button, #drawButton');
-    buttons.forEach(btn => btn.disabled = actionCooldown);
+    const cards = document.querySelectorAll('.card-img');
+    const drawBtn = document.getElementById('drawBtn');
+
+    cards.forEach(card => {
+        card.style.pointerEvents = actionCooldown ? "none" : "auto";
+        card.style.opacity = actionCooldown ? "0.6" : "1";
+    });
+
+    drawBtn.disabled = actionCooldown;
 }
 
 // Defines the core types of cards
@@ -434,6 +446,8 @@ function applyPlusTwoEffect(targetHand, targetName) {
         // Sets time out to 10 seconds
         setTimeout(() => {
             // Sets the players message
+            endPlayerCooldown();
+            endPlayerCooldown();
             setMessage("Your turn now!");
         }, 1000); 
     }
@@ -475,6 +489,7 @@ function applyPlusFourEffect(targetHand, targetName) {
         // Sets the timeout to 10 seconds
         setTimeout(() => {
             // Sets the message
+            endPlayerCooldown();
             setMessage("Your turn now!");
         }, 1000); 
     }
@@ -508,6 +523,7 @@ function applySkipEffect(targetName) {
     } else {
         // Sets the message
         setTimeout(() => {
+            endPlayerCooldown();
             setMessage("Your turn now!");
         }, 1000); 
     }
@@ -516,15 +532,18 @@ function applySkipEffect(targetName) {
 /* Player plays card (UNCHANGED) */
 function playCard(index) {
   // Checks if the game is over or there is a pending play or present active
-  if (gameOver || pendingPlayIndex !== -1 || presentActive) return;
-  // Gets the card from the player hand
-  const card = playerHand[index];
-  // Checks if the card can be played
-  if (!canPlay(card)) {
-    // Sets the message
-    setMessage("❌ You can't play that card!");
-    return;
-  }
+    if (actionCooldown) return;
+
+    const card = playerHand[index];
+
+    if (!canPlay(card)) {
+        setMessage("❌ You can't play that card!");
+        return;
+    }
+
+    // 🔒 lock ONLY after validation
+    actionCooldown = true;
+    updateUI();
   // Checks if the card is wild
   if (card.isWild) {
       // Sets the pending play index to the index
@@ -569,6 +588,7 @@ function playCard(index) {
     setMessage(`You played a Skip. Computer's turn is skipped!`);
   }
   // Sets the computer turn timeout to 900 milliseconds
+  activateCooldown();
   setTimeout(computerTurn, 900);
 }
 
@@ -702,6 +722,8 @@ window.handleColorSelect = function(selectedColor) {
 
 /* Player draws (UNCHANGED) */
 document.getElementById("drawBtn").onclick = () => {
+    if (actionCooldown) return;
+    actionCooldown = true;
   // Check if we are in 2-Player mode
     if (document.getElementById("player1Hand") && !document.getElementById("playerHand")) {
         drawCard2P();
@@ -744,6 +766,7 @@ document.getElementById("drawBtn").onclick = () => {
   // Calls the render function
   render();
   // Sets the computer turn timeout to 900 milliseconds
+  activateCooldown();
   setTimeout(computerTurn, 900);
 };
 
@@ -751,6 +774,7 @@ document.getElementById("drawBtn").onclick = () => {
 function computerTurn() {
   // Checks if the game is over
     if (gameOver) return;
+    actionCooldown = true;
     // Checks if skip is active
     if (skipActive) {
         // Applies the skip effect to the computer
@@ -874,6 +898,7 @@ function computerTurn() {
             }
             
             setTimeout(() => {
+                endPlayerCooldown();
                 setMessage("Your turn now!");
             }, 500);
             return; 
@@ -919,8 +944,9 @@ function computerTurn() {
         setMessage("🤖 Computer drew a card");
         render();
     }
-
     setTimeout(() => {
+        actionCooldown = false;
+        endPlayerCooldown();
         setMessage("Your turn now!");
     }, 500);
 }

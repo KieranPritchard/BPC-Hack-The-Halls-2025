@@ -29,6 +29,7 @@
   <audio id="plus-two-sound" src="./SFX/PLUS2.mp3"></audio> 
   <audio id="plus-four-sound" src="./SFX/PLUS4.mp3"></audio>
   <audio id="wild-sound" src="./SFX/CARDSWOOSH.mp3"></audio> 
+  <audio id="skip-card-sound" src="./SFX/SKIPCARD.mp3"></audio>
 
   <!-- Button that toggles music on/off -->
   <button id="musicToggleBtn"
@@ -39,28 +40,28 @@
   <!-- Game page main heading -->
   <h1 class="text-center text-4xl font-extrabold mb-8 text-red-300 drop-shadow-lg">
     <!-- Holly icon -->
-    <i class="fas fa-holly-berry mr-2"></i> UNO: Festive Challenge
+    <i class="fas fa-holly-berry mr-2"></i> UNO: Festive Edition
   </h1>
 
   <!-- Centered container -->
   <div class="max-w-4xl mx-auto space-y-6">
     <!-- Computer hand -->
     <div class="p-4 rounded christmas-container">
-      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Computer's Stocking</h2>
+      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Computer's Hand</h2>
       <!-- Stores the computers cards which are handled via javascript -->
       <div id="computerHand" class="flex flex-wrap gap-3"></div>
     </div>
     
     <!-- Top card container -->
     <div class="p-4 rounded text-center christmas-container">
-      <h2 class="text-xl font-semibold text-yellow-400">Top Card (Chimney)</h2>
+      <h2 class="text-xl font-semibold text-yellow-400">Top Card</h2>
       <!-- Stores the top card which are handled via javascript -->
       <div id="topCard" class="mt-3 flex justify-center"></div>
     </div>
 
     <!-- Player hand container -->
     <div class="p-4 rounded christmas-container">
-      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Your Hand (Mistletoe)</h2>
+      <h2 class="text-xl font-semibold mb-2 text-yellow-400">Your Hand</h2>
       <!-- Stores the cards -->
       <div id="playerHand" class="flex flex-wrap gap-3"></div>
       

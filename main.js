@@ -164,6 +164,11 @@ function playWildSound() {
     // Gets the audio element of the wild card sound
     document.getElementById("wild-sound").play().catch(e => console.error("Wild sound failed:", e)); 
 }
+// function that plays the skip card sound
+function playSkipSound() {
+    const el = document.getElementById("skip-card-sound");
+    if (el) el.play().catch(e => console.error("Skip sound failed:", e));
+}
 // function that plays the win sound
 function playWinSound() { 
     // Gets the audio element of the win sound
@@ -583,6 +588,8 @@ function playCard(index) {
   } else if (card.value === "miss") {
     // Sets the skip active to true
     skipActive = true;
+         // Play skip sound
+         playSkipSound();
     // Sets the message
     setMessage(`You played a Skip. Computer's turn is skipped!`);
   }
@@ -1229,7 +1236,10 @@ function render2P() {
 
     /* ---------- PLAYER 2 HAND ---------- */
     const p2Div = document.getElementById("player2Hand");
-    p2Div.innerHTML = "";
+            // If the computer played a Skip, play skip sound
+            if (playable.value === "miss") {
+                playSkipSound();
+            }
 
     // Snowball: hide Player 2 cards when Player 1 is active
     if (p2_snowballActive && isP1Turn) {
@@ -1387,6 +1397,7 @@ function playCard2P(index) {
     if (checkWinner2P()) return;
 
     if (card.value === "+2" || card.value === "miss" || card.value === SNOWBALL_VALUE || card.value === PRESENT_VALUE) {
+        if (card.value === "miss") playSkipSound();
         applyActionEffect2P(card.value);
     } else {
         advanceTurn();

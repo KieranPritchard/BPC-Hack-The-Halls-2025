@@ -23,6 +23,7 @@
   <audio id="plus-two-sound" src="./SFX/PLUS2.mp3"></audio> 
   <audio id="plus-four-sound" src="./SFX/PLUS4.mp3"></audio>
   <audio id="wild-sound" src="./SFX/CARDSWOOSH.mp3"></audio> 
+  <audio id="skip-card-sound" src="./SFX/SKIPCARD.mp3"></audio>
 
   <button id="musicToggleBtn"
     class="christmas-btn fixed bottom-4 right-4 p-3 rounded-full z-50 font-bold shadow-xl">
@@ -40,7 +41,7 @@
     <div id="handsContainer" class="space-y-6">
         
         <div class="p-4 rounded christmas-container">
-          <h2 id="p2_hand_label" class="text-xl font-semibold mb-2 text-yellow-400">Player 2's Stocking</h2>
+          <h2 id="p2_hand_label" class="text-xl font-semibold mb-2 text-yellow-400">Player 2's Hand</h2>
           <div id="player2Hand" class="flex flex-wrap gap-3"></div>
         </div>
         
@@ -59,7 +60,7 @@
         </div>
 
         <div class="p-4 rounded christmas-container">
-          <h2 id="p1_hand_label" class="text-xl font-semibold mb-2 text-yellow-400">Player 1's Hand (Mistletoe)</h2>
+          <h2 id="p1_hand_label" class="text-xl font-semibold mb-2 text-yellow-400">Player 1's Hand</h2>
           <div id="player1Hand" class="flex flex-wrap gap-3"></div>
         </div>
         

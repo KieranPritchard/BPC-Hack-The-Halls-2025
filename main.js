@@ -193,14 +193,13 @@ function generateDeck() {
       // Uses the filename variable to get the image path
       const imagePath = `cards/${fileName}`;
       // Stores the card as a dictionary
-      const card = { color, value: value.toString(), image: imagePath, type: 'number' };
-      // Adds the card to the deck
-      deck.push(card); 
-      // Checks if the card value is not zero
-      if (value !== 0) {
-        // Pushs the card to the deck
-        deck.push(card); 
-      }
+            const card = { color, value: value.toString(), image: imagePath, type: 'number' };
+            // Adds the card to the deck (single instance)
+            deck.push({...card});
+            // Checks if the card value is not zero and add a second copy
+            if (value !== 0) {
+                deck.push({...card});
+            }
     });
 
     // Loops over the action values and filters out the non wild card values
@@ -209,11 +208,11 @@ function generateDeck() {
       const fileName = `${color}_${value}.png`;
       // Uses the filename variable to get the image path
       const imagePath = `cards/${fileName}`;
-      // Stores the card as a dictionary
-      const card = { color, value, image: imagePath, type: 'action' };
-      // Pushes the cards to the deck
-      deck.push(card); 
-      deck.push(card); 
+    // Stores the card as a dictionary
+    const card = { color, value, image: imagePath, type: 'action' };
+    // Push cloned action cards to the deck
+    deck.push({...card});
+    deck.push({...card});
     });
   });
 
@@ -268,6 +267,7 @@ function getCardImagePath(card, isFaceUp = true) {
     return CARD_BACK_IMAGE_PATH;
   }
 }
+
 
 /* Draw card */
 function drawCard(hand) {
@@ -398,16 +398,15 @@ function render() {
 
 // Check if card playable
 function canPlay(card) {
-  // Checks if the card is wild  
+  // Checks if the card is wild
   if (card.isWild) {
-        // Returns true
-        return true; 
-    }
-    // Checks if the top colour is effective
-    const effectiveTopColor = topCard.isWild && currentColor ? currentColor : topCard.color;
+    return true;
+  }
+  // Checks if the top colour is effective
+  const effectiveTopColor = topCard.isWild && currentColor ? currentColor : topCard.color;
 
-    // Returns the result
-    return card.color === effectiveTopColor || card.value === topCard.value;
+  // Returns the result
+  return card.color === effectiveTopColor || card.value === topCard.value;
 }
 
 // Action Card Logic Helpers (Single Player Mode)
@@ -1125,6 +1124,7 @@ let p2_snowballActive = false;
 let p2_presentActive = false;
 let p2_gameOver = false;
 let p2_pendingPlayIndex = -1; // -1: no pending, index: index of card played
+let p2_pendingDrawAmount = 0; // pending draw penalty (2 or 4)
 
 // --- Message/Status Helpers for 2-Player ---
 
@@ -1291,11 +1291,28 @@ function advanceTurn() {
 
     currentPlayer = getNextPlayer();
 
-    // Reset single-player active flags
-    p2_plusTwoActive = false;
-    p2_skipActive = false;
-    p2_snowballActive = false;
-    p2_presentActive = false;
+    // If there's a pending draw penalty for the player who just became current, apply it now
+    if (p2_pendingDrawAmount > 0) {
+        const drawAmount = p2_pendingDrawAmount;
+        const hand = getCurrentHand();
+        for (let i = 0; i < drawAmount; i++) drawCard(hand);
+        p2_pendingDrawAmount = 0;
+        // Clear related flags after applying penalty
+        p2_skipActive = false;
+        p2_plusTwoActive = false;
+
+        setStatusMessage(`${getCurrentPlayerName()} drew ${drawAmount} cards due to penalty and is skipped!`);
+        render2P();
+
+        // Skip this player's turn by advancing to the next player
+        currentPlayer = getNextPlayer();
+    } else if (p2_skipActive) {
+        // If there's a pure skip (no pending draw), skip the player
+        const skippedPlayerName = getCurrentPlayerName();
+        p2_skipActive = false;
+        currentPlayer = getNextPlayer();
+        setStatusMessage(`${skippedPlayerName}'s turn was skipped!`);
+    }
 
     render2P();
     checkWinner2P();
@@ -1309,14 +1326,12 @@ function applyActionEffect2P(cardValue) {
 
     if (cardValue === "+2" || isPlusFour) {
         const drawAmount = isPlusFour ? 4 : 2;
-        playPlusFourSound(); 
-
-        for (let i = 0; i < drawAmount; i++) {
-            drawCard(targetHand);
-        }
-
-        p2_plusTwoActive = true; 
+        // Queue the draw penalty for the next player instead of drawing immediately
+        p2_pendingDrawAmount = drawAmount;
         p2_skipActive = true; // Draw penalty also skips turn
+
+        // Play appropriate sound for penalty (+4 uses plus-four sound)
+        if (isPlusFour) playPlusFourSound(); else playPlusTwoSound();
 
         setStatusMessage(`💀 ${targetName} must draw ${drawAmount} cards and is skipped! New Color: ${currentColor.toUpperCase()}`);
         
@@ -1430,13 +1445,12 @@ function drawCard2P() {
     const currentHand = getCurrentHand();
     let drawAmount = 1;
     let messageText = `${getCurrentPlayerName()} drew a card.`;
-    
-    if (p2_plusTwoActive) {
-        const isPlusFour = topCard && topCard.value === "+4";
-        drawAmount = isPlusFour ? 4 : 2;
+    // Note: draw penalties are handled via p2_pendingDrawAmount when queued.
+    if (p2_pendingDrawAmount > 0) {
+        drawAmount = p2_pendingDrawAmount;
         messageText = `${getCurrentPlayerName()} drew ${drawAmount} cards due to the +${drawAmount} penalty.`;
-        p2_plusTwoActive = false;
-    } 
+        p2_pendingDrawAmount = 0;
+    }
 
     for (let i = 0; i < drawAmount; i++) {
         drawCard(currentHand);
@@ -1449,6 +1463,11 @@ function drawCard2P() {
     
     // Draw also ends the turn
     advanceTurn();
+
+    // Clear the shared single-player action cooldown set by the draw button
+    // so 2-player mode doesn't remain blocked after drawing.
+    actionCooldown = false;
+    endPlayerCooldown();
 }
 
 function checkWinner2P() {

@@ -936,12 +936,14 @@ function computerTurn() {
             return; 
         // Checks if the playable value is miss
         } else if (playable.value === "miss") {
+            // Play skip sound when computer places a Skip
+            playSkipSound();
             // Sets skip active to true
-             skipActive = true; 
-             setTimeout(() => {
-                 applySkipEffect("You");
-             }, 500);
-             return; 
+            skipActive = true; 
+            setTimeout(() => {
+                applySkipEffect("You");
+            }, 500);
+            return; 
         }
     // No playable card found, computer draws a card
     } else {
@@ -1132,6 +1134,9 @@ let p2_presentActive = false;
 let p2_gameOver = false;
 let p2_pendingPlayIndex = -1; // -1: no pending, index: index of card played
 let p2_pendingDrawAmount = 0; // pending draw penalty (2 or 4)
+// Pass-device hotseat state
+let p2_passActive = false; // true while waiting for OK to reveal next player's cards
+let p2_firstTurn = true; // used to avoid showing pass modal at initial game start
 
 // --- Message/Status Helpers for 2-Player ---
 
@@ -1204,42 +1209,51 @@ function render2P() {
     const p1Div = document.getElementById("player1Hand");
     p1Div.innerHTML = "";
 
-    player1Hand.forEach((card, index) => {
-        const img = document.createElement("img");
+    if (p2_passActive) {
+        // While passing device, show card backs only (no click handlers)
+        player1Hand.forEach(() => {
+            const img = document.createElement("img");
+            img.src = CARD_BACK_IMAGE_PATH;
+            img.className = "card-img";
+            img.alt = "Card Back";
+            p1Div.appendChild(img);
+        });
+    } else {
+        player1Hand.forEach((card, index) => {
+            const img = document.createElement("img");
 
-        // Card BACK if not Player 1's turn
-        img.src = isP1Turn
-            ? card.image
-            : CARD_BACK_IMAGE_PATH;
+            // Card BACK if not Player 1's turn
+            img.src = isP1Turn
+                ? card.image
+                : CARD_BACK_IMAGE_PATH;
 
-        img.className = "card-img";
-        img.alt = isP1Turn ? `${card.color} ${card.value}` : "Card Back";
+            img.className = "card-img";
+            img.alt = isP1Turn ? `${card.color} ${card.value}` : "Card Back";
 
-        // Click only if it's Player 1's turn
-        if (
-            isP1Turn &&
-            !p2_gameOver &&
-            p2_pendingPlayIndex === -1 &&
-            !p2_presentActive
-        ) {
-            img.onclick = () => playCard2P(index);
-        }
+            // Click only if it's Player 1's turn
+            if (
+                isP1Turn &&
+                !p2_gameOver &&
+                p2_pendingPlayIndex === -1 &&
+                !p2_presentActive
+            ) {
+                img.onclick = () => playCard2P(index);
+            }
 
-        // Present gifting highlight
-        if (isP1Turn && p2_presentActive) {
-            img.style.border = "4px solid #cc0000";
-            img.onclick = () => selectCardToGift2P(index, 1);
-        }
+            // Present gifting highlight
+            if (isP1Turn && p2_presentActive) {
+                img.style.border = "4px solid #cc0000";
+                img.onclick = () => selectCardToGift2P(index, 1);
+            }
 
-        p1Div.appendChild(img);
-    });
+            p1Div.appendChild(img);
+        });
+    }
 
     /* ---------- PLAYER 2 HAND ---------- */
     const p2Div = document.getElementById("player2Hand");
-            // If the computer played a Skip, play skip sound
-            if (playable.value === "miss") {
-                playSkipSound();
-            }
+    // Ensure previous contents are cleared to avoid duplicated/hidden cards
+    p2Div.innerHTML = "";
 
     // Snowball: hide Player 2 cards when Player 1 is active
     if (p2_snowballActive && isP1Turn) {
@@ -1250,35 +1264,46 @@ function render2P() {
             "❄️ Player 2's cards are hidden by the Snowball!";
         p2Div.appendChild(placeholder);
     } else {
-        player2Hand.forEach((card, index) => {
-            const img = document.createElement("img");
+        if (p2_passActive) {
+            // While passing, show backs only
+            player2Hand.forEach(() => {
+                const img = document.createElement("img");
+                img.src = CARD_BACK_IMAGE_PATH;
+                img.className = "card-img";
+                img.alt = "Card Back";
+                p2Div.appendChild(img);
+            });
+        } else {
+            player2Hand.forEach((card, index) => {
+                const img = document.createElement("img");
 
-            // Card BACK if not Player 2's turn
-            img.src = isP2Turn
-                ? card.image
-                : CARD_BACK_IMAGE_PATH;
+                // Card BACK if not Player 2's turn
+                img.src = isP2Turn
+                    ? card.image
+                    : CARD_BACK_IMAGE_PATH;
 
-            img.className = "card-img";
-            img.alt = isP2Turn ? `${card.color} ${card.value}` : "Card Back";
+                img.className = "card-img";
+                img.alt = isP2Turn ? `${card.color} ${card.value}` : "Card Back";
 
-            // Click only if it's Player 2's turn
-            if (
-                isP2Turn &&
-                !p2_gameOver &&
-                p2_pendingPlayIndex === -1 &&
-                !p2_presentActive
-            ) {
-                img.onclick = () => playCard2P(index);
-            }
+                // Click only if it's Player 2's turn
+                if (
+                    isP2Turn &&
+                    !p2_gameOver &&
+                    p2_pendingPlayIndex === -1 &&
+                    !p2_presentActive
+                ) {
+                    img.onclick = () => playCard2P(index);
+                }
 
-            // Present gifting highlight
-            if (isP2Turn && p2_presentActive) {
-                img.style.border = "4px solid #006600";
-                img.onclick = () => selectCardToGift2P(index, 2);
-            }
+                // Present gifting highlight
+                if (isP2Turn && p2_presentActive) {
+                    img.style.border = "4px solid #006600";
+                    img.onclick = () => selectCardToGift2P(index, 2);
+                }
 
-            p2Div.appendChild(img);
-        });
+                p2Div.appendChild(img);
+            });
+        }
     }
 
     /* ---------- UI UPDATES ---------- */
@@ -1288,7 +1313,7 @@ function render2P() {
 
     document.getElementById(
         "p2_hand_label"
-    ).innerText = `Player 2's Stocking (${player2Hand.length} cards)`;
+    ).innerText = `Player 2's Hand (${player2Hand.length} cards)`;
 
     document.getElementById("drawBtn").disabled =
         p2_gameOver || p2_presentActive || p2_pendingPlayIndex !== -1;
@@ -1299,7 +1324,9 @@ function render2P() {
 function advanceTurn() {
     if (p2_gameOver) return;
 
+    // Advance to next player
     currentPlayer = getNextPlayer();
+    let skipped = false; // whether this turn-change immediately skipped the next player
 
     // If there's a pending draw penalty for the player who just became current, apply it now
     if (p2_pendingDrawAmount > 0) {
@@ -1316,17 +1343,30 @@ function advanceTurn() {
 
         // Skip this player's turn by advancing to the next player
         currentPlayer = getNextPlayer();
+        skipped = true;
     } else if (p2_skipActive) {
         // If there's a pure skip (no pending draw), skip the player
         const skippedPlayerName = getCurrentPlayerName();
         p2_skipActive = false;
         currentPlayer = getNextPlayer();
+        skipped = true;
         setStatusMessage(`${skippedPlayerName}'s turn was skipped!`);
     }
 
     render2P();
     checkWinner2P();
-    showPlayerTurnMessage();
+
+    // If this is a normal turn change (not due to a skip/penalty) and not the very first turn,
+    // prompt the players to pass the device before revealing the next hand.
+    if (!skipped && !p2_firstTurn) {
+        showPassModalForPlayer(currentPlayer);
+    } else {
+        // No pass modal — just show the player-turn status
+        showPlayerTurnMessage();
+    }
+
+    // After first call, mark firstTurn as false so future advances show the pass modal
+    p2_firstTurn = false;
 }
 
 function applyActionEffect2P(cardValue) {
@@ -1365,8 +1405,30 @@ function applyActionEffect2P(cardValue) {
     
     // For all other actions, advance the turn
     render2P();
+    // When applying action effects, use advanceTurn as usual — advanceTurn will decide whether to show pass modal
     advanceTurn();
 }
+
+// --- Pass modal helpers ---
+function showPassModalForPlayer(player) {
+    // Set modal text and show
+    const modal = document.getElementById('passModal');
+    const text = document.getElementById('passModalText');
+    const title = document.getElementById('passModalTitle');
+    if (title) title.innerText = `Pass the device`;
+    if (text) text.innerText = `Pass the device to Player ${player} and press OK when ready.`;
+    if (modal) modal.classList.remove('hidden');
+    p2_passActive = true;
+    render2P();
+}
+
+window.confirmPass = function() {
+    const modal = document.getElementById('passModal');
+    if (modal) modal.classList.add('hidden');
+    p2_passActive = false;
+    render2P();
+    showPlayerTurnMessage();
+};
 
 function playCard2P(index) {
     if (p2_gameOver || p2_pendingPlayIndex !== -1 || p2_presentActive) return;
